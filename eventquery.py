@@ -1,6 +1,6 @@
 import pandas
-import obspy
-import obspyDMT
+import lxml.etree as le
+import quakeml
 
 #DUMMY DATA STUFF SHOULD BE CHANGED AS SOON AS STORAGE ETC IS FINALLY DECIDED
 #FIXME:currently only csv
@@ -45,11 +45,11 @@ def filter_magnitude(db,mmin,mmax):
     '''
     return db[(db.magnitude >= mmin) & (db.magnitude >= mmax)]
 
-def events2quakeml(events):
-    '''
-    Returns quakeml from pandas event set
-    '''
-    pass
+#def events2quakeml(events):
+#    '''
+#    Returns quakeml from pandas event set
+#    '''
+#    pass
 
 #QUERY
 def query_events(db,lonmin=-180,lonmax=180,latmin=-90,latmax=90,mmin=0,mmax=9,zmin=0,zmax=999,p=0,etype='stochastic'):
@@ -86,8 +86,8 @@ def query_events(db,lonmin=-180,lonmax=180,latmin=-90,latmax=90,mmin=0,mmax=9,zm
     #magnitude filter
     selected = filter_magnitude(db,mmin,mmax)
 
-    #TODO convert to quakeml
-    selected=events2quakeml(selected)
+    #convert to quakeml
+    selected=quakeml.events2quakeml(selected,provider='GFZ')
 
     return selected
 
@@ -103,12 +103,18 @@ mmin=6.6
 mmax=8.5,
 zmin=5,
 zmax=140,
-p=0,
-etype='historic'
+#p=0,
+#etype='historic'
 #etype='deaggregation'
-#etype='stochastic'
+etype='stochastic'
 #etype='expert'
 #poe='likely',
+p=0
 
-selected = query_events(db,lonmin,lonmax,latmin,latmax,mmin,mmax,zmin,zmax,poe,etype)
+selected = query_events(db,lonmin,lonmax,latmin,latmax,mmin,mmax,zmin,zmax,p,etype)
+
+
+#test writing
+with open('test.xml','w') as f:
+    f.write(selected)
 
