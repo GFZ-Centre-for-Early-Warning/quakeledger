@@ -4,6 +4,8 @@
 import pandas
 import lxml.etree as le
 
+#TODO: publicID in quakeml should refer to webservice address
+
 def event2utc(event):
     '''
     given event returns UTC string
@@ -23,9 +25,10 @@ def events2quakeml(catalog,provider='GFZ'):
     Given a pandas dataframe with events returns QuakeML version of
     the catalog
     '''
-    #TODO: add rupture plane orientation
+    #TODO: add uncertainty to all values (NOTE: OQ/HMTK style spatial uncertainty is ellipse semi-major/semi-minor/strike-error)
     xml_namespace = 'http://quakeml.org/xmlns/quakeml/1.2'
     quakeml = le.Element('eventParameters',namespace=xml_namespace)
+    #go through all events
     for i in range(len(catalog)):
         quake = catalog.iloc[i]
         event = le.SubElement(quakeml,'event',{'publicID':quake.eventID})
@@ -38,6 +41,7 @@ def events2quakeml(catalog,provider='GFZ'):
         description = le.SubElement(event,'description')
         text = le.SubElement(description,'text')
         text.text = quake.type
+        #origin
         origin = le.SubElement(event,'origin',{'publicID':quake.eventID})
         time = le.SubElement(origin,'time')
         value = le.SubElement(time,'value')
@@ -54,6 +58,7 @@ def events2quakeml(catalog,provider='GFZ'):
         creationInfo = le.SubElement(origin,'creationInfo')
         author = le.SubElement(creationInfo,'value')
         author.text = provider
+        #magnitude
         magnitude = le.SubElement(event,'magnitude',{'publicID':quake.eventID})
         mag = le.SubElement(magnitude,'mag')
         value = le.SubElement(mag,'value')
@@ -63,15 +68,29 @@ def events2quakeml(catalog,provider='GFZ'):
         creationInfo = le.SubElement(magnitude,'creationInfo')
         author = le.SubElement(creationInfo,'value')
         author.text = provider
+        #plane (write only fault plane not auxilliary)
+        focalMechanism = le.SubElement(event,'focalMechanism',{'publicID':quake.eventID})
+        nodalPlanes = le.SubElement(focalMechanism,'nodalPlanes')
+        nodalPlane1 = le.SubElement(nodalPlanes,'nodalPlane1')
+        strike = le.SubElement(nodalPlane1,'strike')
+        value  = le.SubElement(strike,'value')
+        value.text = str(quake.strike)
+        dip = le.SubElement(nodalPlane1,'dip')
+        value  = le.SubElement(dip,'value')
+        value.text = str(quake.dip)
+        rake = le.SubElement(nodalPlane1,'rake')
+        value  = le.SubElement(rake,'value')
+        value.text = str(quake.rake)
+        preferredPlane = le.SubElement(nodalPlanes,'preferredPlane')
+        preferredPlane.text = 'nodalPlane1'
 
     return le.tostring(quakeml,pretty_print=True,xml_declaration=True,encoding='unicode')
-
 
 def quakeml2events(quakemlfile,provider='GFZ'):
     '''
     Given a quakeml file returns a pandas dataframe
     '''
-    #TODO: add rupture plane orientation
+    #TODO: add uncertainty
     #read quakeml catalog
     with open(quakemlfile,'r') as f:
         quakeml = f.read()
@@ -79,7 +98,8 @@ def quakeml2events(quakemlfile,provider='GFZ'):
     quakeml = le.Element('eventParameters',namespace=xml_namespace)
     #initialize catalog
     index = [i for i in range(len(quakeml))]
-    columns=['eventID', 'Agency', 'Identifier', 'year', 'month', 'day', 'hour', 'minute', 'second', 'timeError', 'longitude', 'latitude','SemiMajor90', 'SemiMinor90', 'ErrorStrike', 'depth', 'depthError', 'magnitude', 'sigmaMagnitude', 'type', 'probability', 'fuzzy']
+    columns=['eventID', 'Agency', 'Identifier', 'year', 'month', 'day', 'hour', 'minute', 'second', 'timeError', 'longitude', 'latitude',              'SemiMajor90', 'SemiMinor90', 'ErrorStrike', 'depth', 'depthError', 'magnitude', 'sigmaMagnitude','rake','dip','strike','type', 'probability',   'fuzzy']
+    #columns=['eventID', 'Agency', 'Identifier', 'year', 'month', 'day', 'hour', 'minute', 'second', 'timeError', 'longitude', 'latitude','SemiMajor90', 'SemiMinor90', 'ErrorStrike', 'depth', 'depthError', 'magnitude', 'sigmaMagnitude', 'type', 'probability', 'fuzzy']
     catalog=pandas.DataFrame(index=index,columns=columns)
     #add individual events to catalog
     for i,event in enumerate(quakeml):
@@ -99,5 +119,11 @@ def quakeml2events(quakemlfile,provider='GFZ'):
         catalog.iloc[i].agency = origin.find('creationInfo').findtext('value')
         #magnitude
         catalog.iloc[i].magnitude = float(event.find('magnitude').find('mag').findtext('value'))
+        #plane
+        nodalPlanes = event.find('focalMechanism').find('nodalPlanes')
+        preferredPlane = nodalPlanes.findtext('preferredPlane')
+        catalog.iloc[i].strike = float(nodalPlanes.find(preferredPlane).find('strike').findtext('value'))
+        catalog.iloc[i].dip = float(nodalPlanes.find(preferredPlane).find('dip').findtext('value'))
+        catalog.iloc[i].rake = float(nodalPlanes.find(preferredPlane).find('rake').findtext('value'))
 
     return catalog
