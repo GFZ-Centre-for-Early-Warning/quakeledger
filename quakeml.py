@@ -89,14 +89,18 @@ def events2quakeml(catalog,provider='GFZ'):
 
 def quakeml2events(quakemlfile,provider='GFZ'):
     '''
-    Given a quakeml file returns a pandas dataframe
+    Given a quakeml file/or string returns a pandas dataframe
     '''
     #TODO: add uncertainty
-    #read quakeml catalog
-    with open(quakemlfile,'r') as f:
-        quakeml = f.read()
+    try:
+        #read quakeml catalog
+        with open(quakemlfile,'r') as f:
+            quakeml = f.read()
+    except:
+        #maybe already string
+        quakeml = quakemlfile
+
     quakeml = le.fromstring(quakeml)
-    quakeml = le.Element('eventParameters',namespace=xml_namespace)
     #initialize catalog
     index = [i for i in range(len(quakeml))]
     columns=['eventID', 'Agency', 'Identifier', 'year', 'month', 'day', 'hour', 'minute', 'second', 'timeError', 'longitude', 'latitude',              'SemiMajor90', 'SemiMinor90', 'ErrorStrike', 'depth', 'depthError', 'magnitude', 'sigmaMagnitude','rake','dip','strike','type', 'probability',   'fuzzy']
