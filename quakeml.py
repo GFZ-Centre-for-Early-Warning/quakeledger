@@ -11,7 +11,7 @@ def event2utc(event):
     given event returns UTC string
     '''
     d=event.fillna(0)
-    return '{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:09f}Z'.format(d.year,max(d.month,1),max(d.day,1),d.hour,d.minute,d.second)
+    return '{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:09f}Z'.format(int(d.year),int(max(d.month,1)),int(max(d.day,1)),int(d.hour),int(d.minute),d.second)
 
 def utc2event(utc):
     '''
@@ -84,7 +84,8 @@ def events2quakeml(catalog,provider='GFZ'):
         preferredPlane = le.SubElement(nodalPlanes,'preferredPlane')
         preferredPlane.text = 'nodalPlane1'
 
-    return le.tostring(quakeml,pretty_print=True,xml_declaration=True,encoding='unicode')
+    #return str(le.tostring(quakeml,pretty_print=True,xml_declaration=True),encoding='utf-8')
+    return le.tostring(quakeml,pretty_print=True,encoding='unicode')
 
 def quakeml2events(quakemlfile,provider='GFZ'):
     '''

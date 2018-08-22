@@ -1,6 +1,7 @@
 import pandas
 import lxml.etree as le
 import quakeml
+import disaggregation_oq_sources as dos
 
 #DUMMY DATA STUFF SHOULD BE CHANGED AS SOON AS STORAGE ETC IS FINALLY DECIDED
 #FIXME:currently only csv
@@ -34,16 +35,18 @@ def filter_type(db,etype,probability):
     '''
     filters event type and probability
     '''
-    if etype in ['historic','stochastic','historic','deaggregation']:
+    if etype in ['expert','observed','stochastic']:
+        #return db[(db.type==etype) & (abs(db.probability-p) < 10**-5)]
         return db[(db.type==etype) & (db.probability > p)]
-    elif etype in ['expert']:
-        return db[(db.type==etype) & (db.probability==p)]
+    elif etype in ['deaggregation']:
+        #get stochastic events
+        return db[(db.type=='stochastic')]
 
 def filter_magnitude(db,mmin,mmax):
     '''
     filters magnitude
     '''
-    return db[(db.magnitude >= mmin) & (db.magnitude >= mmax)]
+    return db[(db.magnitude >= mmin) & (db.magnitude <= mmax)]
 
 #def events2quakeml(events):
 #    '''
@@ -52,27 +55,31 @@ def filter_magnitude(db,mmin,mmax):
 #    pass
 
 #QUERY
-def query_events(db,lonmin=-180,lonmax=180,latmin=-90,latmax=90,mmin=0,mmax=9,zmin=0,zmax=999,p=0,etype='stochastic'):
+def query_events(db,lonmin=-180,lonmax=180,latmin=-90,latmax=90,mmin=0,mmax=12,zmin=0,zmax=999,p=0,tlat=0,tlon=0,etype='stochastic'):
     '''
     Returns set of events
     type can be:
+        -observed (returns set of observed events, probability is rate of event)
         -stochastic (returns stochastic set of events, probability is rate of event)
         -expert     (returns expert defined events, probability is rate of event)
-        -psha       (returns events matching ground motion for psha at target, given probability of exceedance)
-        -deaggregation (returns events matching deaggregation, probability is lower level of exceedance probability)
+        -deaggregation (returns events matching deaggregation, probability is exceedance probability of lat,lon,mw bin event belongs to requires
+                        to define a target)
 
     Optional Constraints
-        - target: tlat,tlon
-        - distance:
-        - boundary region: lonmin,lonmax,latmin,latmax (default:-180,180,-90,90)
+        - target: tlat,tlon (for deaggregation)
+        - event location region: lonmin,lonmax,latmin,latmax (default:-180,180,-90,90)
         - minimum magnitude: mmin (Mw, default:0)
+        - maximum magnitude: mmax (Mw, default:12)
         - maximum depth: zmax (km, default 999)
         - probability: p (interpretation depends on type see above)
     '''
-    if etype!='stochastic':
-        raise Exception('Not implemented')
     #filter type and probability
     selected = filter_type(db,etype,p)
+
+    #deaggregation
+    if etype == 'deaggregation':
+        #get events matching deaggregation for target
+        selected = dos.match_disaggregation(selected,lat,lon,poe)
 
     #convert 360 degree longitude in case
     if lonmin > 180:
@@ -84,7 +91,7 @@ def query_events(db,lonmin=-180,lonmax=180,latmin=-90,latmax=90,mmin=0,mmax=9,zm
     selected = filter_spatial(selected,lonmin,lonmax,latmin,latmax,zmin,zmax)
 
     #magnitude filter
-    selected = filter_magnitude(db,mmin,mmax)
+    selected = filter_magnitude(selected,mmin,mmax)
 
     #convert to quakeml
     selected=quakeml.events2quakeml(selected,provider='GFZ')
@@ -95,24 +102,25 @@ def query_events(db,lonmin=-180,lonmax=180,latmin=-90,latmax=90,mmin=0,mmax=9,zm
 db = connect()
 
 #test query params
-lonmin=288
-lonmax=292
-latmin=-70
-latmax=-10
-mmin=6.6
-mmax=8.5,
-zmin=5,
-zmax=140,
+#lonmin=288
+#lonmax=292
+#latmin=-70
+#latmax=-10
+#mmin=6.6
+#mmax=8.5,
+#zmin=5,
+#zmax=140,
 #p=0,
 #etype='historic'
 #etype='deaggregation'
 etype='stochastic'
 #etype='expert'
 #poe='likely',
+#p=0.0659340659
 p=0
 
-selected = query_events(db,lonmin,lonmax,latmin,latmax,mmin,mmax,zmin,zmax,p,etype)
-
+#selected = query_events(db,lonmin,lonmax,latmin,latmax,mmin,mmax,zmin,zmax,p,etype)
+selected = query_events(db,p=p,etype=etype)
 
 #test writing
 with open('test.xml','w') as f:
