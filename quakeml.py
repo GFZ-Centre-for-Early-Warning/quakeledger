@@ -17,6 +17,13 @@ def utc2event(utc):
     '''
     given utc string returns list with year,month,day,hour,minute,second
     '''
+    #last part usually either Z(ulu) or UTC, if not fails
+    if utc[-3:]=='UTC':
+        utc=utc[:-2]
+    elif utc[-1:]=='Z':
+        pass
+    else:
+        raise Exception('Cannot handle timezone other than Z(ulu) or UTC: {}'.format(utc))
     date,time = utc.split('T')
     return [int(v) if i<5 else float(v) for i,v in enumerate([int(d) for d in date.split('-')]+[float(t) for t in time[:-1].split(':')])]
 
@@ -31,18 +38,18 @@ def events2quakeml(catalog,provider='GFZ'):
     #go through all events
     for i in range(len(catalog)):
         quake = catalog.iloc[i]
-        event = le.SubElement(quakeml,'event',{'publicID':quake.eventID})
+        event = le.SubElement(quakeml,'event',{'publicID':str(quake.eventID)})
         preferredOriginID = le.SubElement(event,'preferredOriginID')
-        preferredOriginID.text=quake.eventID
+        preferredOriginID.text=str(quake.eventID)
         preferredMagnitudeID = le.SubElement(event,'preferredMagnitudeID')
-        preferredMagnitudeID.text=quake.eventID
+        preferredMagnitudeID.text=str(quake.eventID)
         qtype = le.SubElement(event,'type')
         qtype.text = 'earthquake'
         description = le.SubElement(event,'description')
         text = le.SubElement(description,'text')
-        text.text = quake.type
+        text.text = str(quake.type)
         #origin
-        origin = le.SubElement(event,'origin',{'publicID':quake.eventID})
+        origin = le.SubElement(event,'origin',{'publicID':str(quake.eventID)})
         time = le.SubElement(origin,'time')
         value = le.SubElement(time,'value')
         value.text = event2utc(quake)
@@ -59,7 +66,7 @@ def events2quakeml(catalog,provider='GFZ'):
         author = le.SubElement(creationInfo,'value')
         author.text = provider
         #magnitude
-        magnitude = le.SubElement(event,'magnitude',{'publicID':quake.eventID})
+        magnitude = le.SubElement(event,'magnitude',{'publicID':str(quake.eventID)})
         mag = le.SubElement(magnitude,'mag')
         value = le.SubElement(mag,'value')
         value.text = str(quake.magnitude)
@@ -69,7 +76,7 @@ def events2quakeml(catalog,provider='GFZ'):
         author = le.SubElement(creationInfo,'value')
         author.text = provider
         #plane (write only fault plane not auxilliary)
-        focalMechanism = le.SubElement(event,'focalMechanism',{'publicID':quake.eventID})
+        focalMechanism = le.SubElement(event,'focalMechanism',{'publicID':str(quake.eventID)})
         nodalPlanes = le.SubElement(focalMechanism,'nodalPlanes')
         nodalPlane1 = le.SubElement(nodalPlanes,'nodalPlane1')
         strike = le.SubElement(nodalPlane1,'strike')

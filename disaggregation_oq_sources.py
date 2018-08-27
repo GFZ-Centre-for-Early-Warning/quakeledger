@@ -103,7 +103,7 @@ def return_random_event(events,disagg,seed=42):
         seed+=i
         row = disagg.iloc[i]
         #get events
-        matches = events[(abs(events.longitude-row.Lon)<10**-5)&(abs(events.latitude-row.Lat)<10**-5)&(abs(events.mag-row.Mag)<10**-5)]
+        matches = events[(abs(events.longitude-row.Lon)<10**-5)&(abs(events.latitude-row.Lat)<10**-5)&(abs(events.magnitude-row.Mag)<10**-5)]
         #append single random sampled idx
         n=len(matches)
         if n>0:
@@ -126,7 +126,7 @@ def match_disaggregation(ruptures,lat,lon,poe):
     #find closest match to target
     slon= [sites.iloc[i].lon for i,v in enumerate(sites.lon) if abs(v-lon)==min(abs(sites.lon - lon))][0]
     slat= [sites.iloc[i].lat for i,v in enumerate(sites.lat) if abs(v-lat)==min(abs(sites.lat - lat))][0]
-    sid = sites[(sites.lon==slon) & (sites.lat==slat)].sid
+    sid = int(sites[(sites.lon==slon) & (sites.lat==slat)].sid)
     #get deaggregation
     dr = pandas.read_csv('mean_disagg.csv')
     #get that for specified hazard level and site
@@ -142,7 +142,7 @@ def match_disaggregation(ruptures,lat,lon,poe):
 
     #select events
     idxs,poe = return_random_event(bins,dr,seed=42)
-    matches = rup.loc[idxs]
+    matches = ruptures.loc[idxs]
     matches['probability']=poe
 
     return matches

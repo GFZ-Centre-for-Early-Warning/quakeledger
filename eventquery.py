@@ -16,7 +16,7 @@ def connect(provider='GFZ'):
     connects to service
     '''
     if provider=='GFZ':
-        return read_database("example_event_db.csv")
+        return read_database("valparaiso.csv")
 
 #FUNCTIONS
 def convert_360(lon):
@@ -62,8 +62,8 @@ def query_events(db,lonmin=-180,lonmax=180,latmin=-90,latmax=90,mmin=0,mmax=12,z
         -observed (returns set of observed events, probability is rate of event)
         -stochastic (returns stochastic set of events, probability is rate of event)
         -expert     (returns expert defined events, probability is rate of event)
-        -deaggregation (returns events matching deaggregation, probability is exceedance probability of lat,lon,mw bin event belongs to requires
-                        to define a target)
+        -deaggregation (returns events matching deaggregation, probability is exceedance probability of hazard curve fur 50 years at target
+                        --> requires to define a target)
 
     Optional Constraints
         - target: tlat,tlon (for deaggregation)
@@ -79,7 +79,7 @@ def query_events(db,lonmin=-180,lonmax=180,latmin=-90,latmax=90,mmin=0,mmax=12,z
     #deaggregation
     if etype == 'deaggregation':
         #get events matching deaggregation for target
-        selected = dos.match_disaggregation(selected,lat,lon,poe)
+        selected = dos.match_disaggregation(selected,tlat,tlon,p)
 
     #convert 360 degree longitude in case
     if lonmin > 180:
@@ -102,26 +102,29 @@ def query_events(db,lonmin=-180,lonmax=180,latmin=-90,latmax=90,mmin=0,mmax=12,z
 db = connect()
 
 #test query params
-#lonmin=288
-#lonmax=292
-#latmin=-70
-#latmax=-10
-#mmin=6.6
-#mmax=8.5,
-#zmin=5,
-#zmax=140,
+lonmin=288
+lonmax=292
+latmin=-70
+latmax=-10
+mmin=6.6
+mmax=8.5,
+zmin=5,
+zmax=140,
+tlon=-71.5730623712764
+tlat=-33.1299174879672
 #p=0,
 #etype='historic'
-#etype='deaggregation'
-etype='stochastic'
+etype='deaggregation'
+#etype='stochastic'
 #etype='expert'
 #poe='likely',
 #p=0.0659340659
-p=0
+#p=0
+p=0.1 #deaggregation PSHA 10% within 50 years
 
-#selected = query_events(db,lonmin,lonmax,latmin,latmax,mmin,mmax,zmin,zmax,p,etype)
-selected = query_events(db,p=p,etype=etype)
-
+selected = query_events(db,lonmin=lonmin,lonmax=lonmax,latmin=latmin,latmax=latmax,mmin=mmin,mmax=mmax,zmin=zmin,zmax=zmax,p=p,tlat=tlat,tlon=tlon,etype=etype)
+##selected = query_events(db,p=p,etype=etype)
+#
 #test writing
 with open('test.xml','w') as f:
     f.write(selected)
