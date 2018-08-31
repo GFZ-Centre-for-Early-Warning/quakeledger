@@ -1,7 +1,8 @@
 import pandas
+import os
 import lxml.etree as le
-import quakeml
-import disaggregation_oq_sources as dos
+from . import quakeml
+from . import disaggregation_oq_sources as dos
 
 #DUMMY DATA STUFF SHOULD BE CHANGED AS SOON AS STORAGE ETC IS FINALLY DECIDED
 #FIXME:currently only csv
@@ -15,8 +16,10 @@ def connect(provider='GFZ'):
     '''
     connects to service
     '''
+    filepath=os.path.dirname(__file__)
+    filename = os.path.join(filepath,"valparaiso.csv")
     if provider=='GFZ':
-        return read_database("valparaiso.csv")
+        return read_database(filename)
 
 #FUNCTIONS
 def convert_360(lon):
@@ -37,7 +40,7 @@ def filter_type(db,etype,probability):
     '''
     if etype in ['expert','observed','stochastic']:
         #return db[(db.type==etype) & (abs(db.probability-p) < 10**-5)]
-        return db[(db.type==etype) & (db.probability > p)]
+        return db[(db.type==etype) & (db.probability > probability)]
     elif etype in ['deaggregation']:
         #get stochastic events
         return db[(db.type=='stochastic')]
@@ -55,7 +58,7 @@ def filter_magnitude(db,mmin,mmax):
 #    pass
 
 #QUERY
-def query_events(db,lonmin=-180,lonmax=180,latmin=-90,latmax=90,mmin=0,mmax=12,zmin=0,zmax=999,p=0,tlat=0,tlon=0,etype='stochastic'):
+def query_events(db, num_events = -1, lonmin=-180,lonmax=180,latmin=-90,latmax=90,mmin=0,mmax=12,zmin=0,zmax=999,p=0,tlat=0,tlon=0,etype='stochastic'):
     '''
     Returns set of events
     type can be:
@@ -66,6 +69,7 @@ def query_events(db,lonmin=-180,lonmax=180,latmin=-90,latmax=90,mmin=0,mmax=12,z
                         --> requires to define a target)
 
     Optional Constraints
+        - num_events: number of events to be returned. Default -1 i.e. all available events
         - target: tlat,tlon (for deaggregation)
         - event location region: lonmin,lonmax,latmin,latmax (default:-180,180,-90,90)
         - minimum magnitude: mmin (Mw, default:0)
@@ -93,39 +97,50 @@ def query_events(db,lonmin=-180,lonmax=180,latmin=-90,latmax=90,mmin=0,mmax=12,z
     #magnitude filter
     selected = filter_magnitude(selected,mmin,mmax)
 
+    #sort according to magnitude
+    selected= selected.sort_values('magnitude',ascending=False)
+
+    #filter according to num_events
+    if (num_events > 0 ):
+        selected = selected.iloc[0:num_events]
+
     #convert to quakeml
     selected=quakeml.events2quakeml(selected,provider='GFZ')
 
     return selected
 
-#Program execution
-db = connect()
 
-#test query params
-lonmin=288
-lonmax=292
-latmin=-70
-latmax=-10
-mmin=6.6
-mmax=8.5,
-zmin=5,
-zmax=140,
-tlon=-71.5730623712764
-tlat=-33.1299174879672
-#p=0,
-#etype='historic'
-etype='deaggregation'
-#etype='stochastic'
-#etype='expert'
-#poe='likely',
-#p=0.0659340659
-#p=0
-p=0.1 #deaggregation PSHA 10% within 50 years
+def main():
+    #Program execution
+    db = connect()
 
-selected = query_events(db,lonmin=lonmin,lonmax=lonmax,latmin=latmin,latmax=latmax,mmin=mmin,mmax=mmax,zmin=zmin,zmax=zmax,p=p,tlat=tlat,tlon=tlon,etype=etype)
-##selected = query_events(db,p=p,etype=etype)
-#
-#test writing
-with open('test.xml','w') as f:
-    f.write(selected)
+    #test query params
+    lonmin=288
+    lonmax=292
+    latmin=-70
+    latmax=-10
+    mmin=6.6
+    mmax=8.5,
+    zmin=5,
+    zmax=140,
+    tlon=-71.5730623712764
+    tlat=-33.1299174879672
+    #p=0,
+    #etype='historic'
+    etype='deaggregation'
+    #etype='stochastic'
+    #etype='expert'
+    #poe='likely',
+    #p=0.0659340659
+    #p=0
+    p=0.1 #deaggregation PSHA 10% within 50 years
 
+    selected = query_events(db,lonmin=lonmin,lonmax=lonmax,latmin=latmin,latmax=latmax,mmin=mmin,mmax=mmax,zmin=zmin,zmax=zmax,p=p,tlat=tlat,tlon=tlon,etype=etype)
+    ##selected = query_events(db,p=p,etype=etype)
+    #
+    #test writing
+    with open('test.xml','w') as f:
+        f.write(selected)
+
+if __name__ =='__main__':
+    main()

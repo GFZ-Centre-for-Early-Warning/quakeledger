@@ -1,7 +1,7 @@
 #Given a stochastic set of ruptures as exported from OQ and a (mean_disagg.csv) disaggregation result
 #(processed using the /home/mhaas/RIESGOS/disaggregation/createPlot.py routine)
 #returns the stochastic set of events associated with the poe of the disaggregation bin it belongs to
-
+import os
 import pandas
 import numpy as np
 #import scipy
@@ -122,13 +122,18 @@ def match_disaggregation(ruptures,lat,lon,poe):
     from the rupture for each bin
     '''
     #read deaggregation sites
-    sites = pandas.read_csv('sites.csv')
+    filepath=os.path.dirname(__file__)
+    sites_filename = os.path.join(filepath,"sites.csv")
+    sites = pandas.read_csv(sites_filename)
+
     #find closest match to target
+    slon= [sites.iloc[i].lon for i,v in enumerate(sites.lon) if abs(v-lon)==min(abs(sites.lon - lon))][0]
     slon= [sites.iloc[i].lon for i,v in enumerate(sites.lon) if abs(v-lon)==min(abs(sites.lon - lon))][0]
     slat= [sites.iloc[i].lat for i,v in enumerate(sites.lat) if abs(v-lat)==min(abs(sites.lat - lat))][0]
     sid = int(sites[(sites.lon==slon) & (sites.lat==slat)].sid)
     #get deaggregation
-    dr = pandas.read_csv('mean_disagg.csv')
+    disagg_filename = os.path.join(filepath,"mean_disagg.csv")
+    dr = pandas.read_csv(disagg_filename)
     #get that for specified hazard level and site
     dr = dr[(dr.sid==sid) & (dr.poe50y==poe)]
     #determine precision
