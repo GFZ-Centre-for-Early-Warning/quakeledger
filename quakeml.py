@@ -5,6 +5,7 @@ import pandas
 import lxml.etree as le
 
 #TODO: publicID in quakeml should refer to webservice address
+#TODO: add second nodal plane!?
 
 def event2utc(event):
     '''
@@ -27,12 +28,22 @@ def utc2event(utc):
     date,time = utc.split('T')
     return [int(v) if i<5 else float(v) for i,v in enumerate([int(d) for d in date.split('-')]+[float(t) for t in time[:-1].split(':')])]
 
+def add_uncertain_child(parent,childname,value,uncertainty):
+    '''
+    Adds an uncertain child with value/uncertainty pair
+    '''
+    child = le.SubElement(parent,childname)
+    v = le.SubElement(child,'value')
+    v.text = str(value)
+    u = le.SubElement(child,'uncertainty')
+    u.text = str(uncertainty)
+    return parent
+
 def events2quakeml(catalog,provider='GFZ'):
     '''
     Given a pandas dataframe with events returns QuakeML version of
     the catalog
     '''
-    #TODO: add uncertainty to all values (NOTE: OQ/HMTK style spatial uncertainty is ellipse semi-major/semi-minor/strike-error)
     xml_namespace = 'http://quakeml.org/xmlns/quakeml/1.2'
     quakeml = le.Element('eventParameters',namespace=xml_namespace)
     #go through all events
@@ -50,26 +61,54 @@ def events2quakeml(catalog,provider='GFZ'):
         text.text = str(quake.type)
         #origin
         origin = le.SubElement(event,'origin',{'publicID':str(quake.eventID)})
-        time = le.SubElement(origin,'time')
-        value = le.SubElement(time,'value')
-        value.text = event2utc(quake)
-        latitude = le.SubElement(origin,'latitude')
-        value = le.SubElement(latitude,'value')
-        value.text = str(quake.latitude)
-        longitude = le.SubElement(origin,'longitude')
-        value = le.SubElement(longitude,'value')
-        value.text = str(quake.longitude)
-        depth = le.SubElement(origin,'depth')
-        value = le.SubElement(depth,'value')
-        value.text = str(quake.depth)
+        origin = add_uncertain_child(origin,childname='time',value=event2utc(quake),uncertainty=str(quake.timeUncertainty))
+        #time = le.SubElement(origin,'time')
+        #value = le.SubElement(time,'value')
+        #value.text = event2utc(quake)
+        #uncertainty = le.SubElement(time,'uncertainty')
+        #uncertainty.text = str(quake.timeUncertainty)
+        origin = add_uncertain_child(origin,childname='latitude',value=str(quake.latitude),uncertainty=str(quake.latitudeUncertainty))
+        #latitude = le.SubElement(origin,'latitude')
+        #value = le.SubElement(latitude,'value')
+        #value.text = str(quake.latitude)
+        #uncertainty = le.SubElement(latitude,'uncertainty')
+        #uncertainty.text = str(quake.sigmaLatitude)
+        origin = add_uncertain_child(origin,childname='longitude',value=str(quake.longitude),uncertainty=str(quake.longitudeUncertainty))
+        #longitude = le.SubElement(origin,'longitude')
+        #value = le.SubElement(longitude,'value')
+        #value.text = str(quake.longitude)
+        #uncertainty = le.SubElement(longitude,'uncertainty')
+        #uncertainty.text = str(quake.sigmaLongitude)
+        origin = add_uncertain_child(origin,childname='depth',value=str(quake.depth),uncertainty=str(quake.depthUncertainty))
+        #depth = le.SubElement(origin,'depth')
+        #value = le.SubElement(depth,'value')
+        #value.text = str(quake.depth)
+        #uncertainty = le.SubElement(depth,'uncertainty')
+        #uncertainty.text = str(quake.depthUncertainty)
         creationInfo = le.SubElement(origin,'creationInfo')
         author = le.SubElement(creationInfo,'value')
         author.text = provider
+        #originUncertainty
+        originUncertainty = le.SubElement(event,'originUncertainty')
+        #NOTE: imo this should be decided during processing and not on data level --> NOT included
+        #preferredDescription = le.SubElement(originUncertainty,'originUncertainty')
+        #preferredDescription.text = quake.preferredOriginUncertainty
+        horizontalUncertainty = le.SubElement(originUncertainty,'horizontalUncertainty')
+        horizontalUncertainty.text = str(quake.horizontalUncertainty)
+        minHorizontalUncertainty = le.SubElement(originUncertainty,'minHorizontalUncertainty')
+        minHorizontalUncertainty.text = str(quake.minHorizontalUncertainty)
+        maxHorizontalUncertainty = le.SubElement(originUncertainty,'maxHorizontalUncertainty')
+        maxHorizontalUncertainty.text = str(quake.maxHorizontalUncertainty)
+        azimuthMaxHorizontalUncertainty = le.SubElement(originUncertainty,'azimuthMaxHorizontalUncertainty')
+        azimuthMaxHorizontalUncertainty.text = str(quake.azimuthMaxHorizontalUncertainty)
         #magnitude
         magnitude = le.SubElement(event,'magnitude',{'publicID':str(quake.eventID)})
-        mag = le.SubElement(magnitude,'mag')
-        value = le.SubElement(mag,'value')
-        value.text = str(quake.magnitude)
+        magnitude = add_uncertain_child(magnitude,childname='mag',value=str(quake.magnitude),uncertainty=str(quake.magnitudeUncertainty))
+        #mag = le.SubElement(magnitude,'mag')
+        #value = le.SubElement(mag,'value')
+        #value.text = str(quake.magnitude)
+        #uncertainty = le.SubElement(magnitude,'uncertainty')
+        #uncertainty.text = str(quake.magnitudeUncertainty)
         mtype = le.SubElement(magnitude,'type')
         mtype.text = 'MW'
         creationInfo = le.SubElement(magnitude,'creationInfo')
@@ -79,20 +118,43 @@ def events2quakeml(catalog,provider='GFZ'):
         focalMechanism = le.SubElement(event,'focalMechanism',{'publicID':str(quake.eventID)})
         nodalPlanes = le.SubElement(focalMechanism,'nodalPlanes')
         nodalPlane1 = le.SubElement(nodalPlanes,'nodalPlane1')
-        strike = le.SubElement(nodalPlane1,'strike')
-        value  = le.SubElement(strike,'value')
-        value.text = str(quake.strike)
-        dip = le.SubElement(nodalPlane1,'dip')
-        value  = le.SubElement(dip,'value')
-        value.text = str(quake.dip)
-        rake = le.SubElement(nodalPlane1,'rake')
-        value  = le.SubElement(rake,'value')
-        value.text = str(quake.rake)
+        nodalPlane1 = add_uncertain_child(nodalPlane1,childname='strike',value=str(quake.strike),uncertainty=str(quake.strikeUncertainty))
+        #strike = le.SubElement(nodalPlane1,'strike')
+        #value  = le.SubElement(strike,'value')
+        #value.text = str(quake.strike)
+        #uncertainty  = le.SubElement(strike,'uncertainty')
+        #uncertainty.text = str(quake.sigmaStrike)
+        nodalPlane1 = add_uncertain_child(nodalPlane1,childname='dip',value=str(quake.dip),uncertainty=str(quake.dipUncertainty))
+        #dip = le.SubElement(nodalPlane1,'dip')
+        #value  = le.SubElement(dip,'value')
+        #value.text = str(quake.dip)
+        #uncertainty  = le.SubElement(dip,'uncertainty')
+        #uncertainty.text = str(quake.sigmaDip)
+        nodalPlane1 = add_uncertain_child(nodalPlane1,childname='rake',value=str(quake.rake),uncertainty=str(quake.rakeUncertainty))
+        #rake = le.SubElement(nodalPlane1,'rake')
+        #value  = le.SubElement(rake,'value')
+        #value.text = str(quake.rake)
+        #uncertainty  = le.SubElement(rake,'uncertainty')
+        #uncertainty.text = str(quake.sigmaRake)
         preferredPlane = le.SubElement(nodalPlanes,'preferredPlane')
         preferredPlane.text = 'nodalPlane1'
 
     #return str(le.tostring(quakeml,pretty_print=True,xml_declaration=True),encoding='utf-8')
     return le.tostring(quakeml,pretty_print=True,encoding='unicode')
+
+def get_uncertain_child(parent,childname):
+    '''
+    Given a childname returns value and uncertainty
+    '''
+    try:
+        value = float(parent.find(childname).findtext('value'))
+    except:
+        value = float('NAN')
+    try:
+        uncertainty = float(parent.find(childname).findtext('uncertainty'))
+    except:
+        uncertainty = float('NAN')
+    return [value,uncertainty]
 
 def quakeml2events(quakemlfile,provider='GFZ'):
     '''
@@ -110,8 +172,7 @@ def quakeml2events(quakemlfile,provider='GFZ'):
     quakeml = le.fromstring(quakeml)
     #initialize catalog
     index = [i for i in range(len(quakeml))]
-    columns=['eventID', 'Agency', 'Identifier', 'year', 'month', 'day', 'hour', 'minute', 'second', 'timeError', 'longitude', 'latitude',              'SemiMajor90', 'SemiMinor90', 'ErrorStrike', 'depth', 'depthError', 'magnitude', 'sigmaMagnitude','rake','dip','strike','type', 'probability',   'fuzzy']
-    #columns=['eventID', 'Agency', 'Identifier', 'year', 'month', 'day', 'hour', 'minute', 'second', 'timeError', 'longitude', 'latitude','SemiMajor90', 'SemiMinor90', 'ErrorStrike', 'depth', 'depthError', 'magnitude', 'sigmaMagnitude', 'type', 'probability', 'fuzzy']
+    columns=['eventID', 'Agency', 'Identifier', 'year', 'month', 'day', 'hour', 'minute', 'second', 'timeUncertainty', 'longitude', 'longitudeUncertainty', 'latitude', 'latitudeUncertainty','horizontalUncertainty','maxHorizontalUncertainty', 'minHorizontalUncertainty', 'azimuthMaxHorizontalUncertainty', 'depth', 'depthUncertainty', 'magnitude', 'magnitudeUncertainty','rake','rakeUncertainty','dip','dipUncertainty','strike','strikeUncertainty','type', 'probability']
     catalog=pandas.DataFrame(index=index,columns=columns)
     #add individual events to catalog
     for i,event in enumerate(quakeml):
@@ -123,19 +184,33 @@ def quakeml2events(quakemlfile,provider='GFZ'):
         origin = event.find('origin')
         #time
         catalog.iloc[i].year,catalog.iloc[i].month,catalog.iloc[i].day,catalog.iloc[i].hour,catalog.iloc[i].minute,catalog.iloc[i].second = utc2event(origin.find('time').findtext('value'))
+        catalog.iloc[i].timeUncertainty = float(origin.find('time').findtext('uncertainty'))
         #latitude/longitude/depth
-        catalog.iloc[i].latitude = float(origin.find('latitude').findtext('value'))
-        catalog.iloc[i].longitude = float(origin.find('longitude').findtext('value'))
-        catalog.iloc[i].depth = float(origin.find('depth').findtext('value'))
+        catalog.iloc[i].latitude, catalog.iloc[i].latitudeUncertainty = get_uncertain_child(origin,'latitude')
+        catalog.iloc[i].longitude, catalog.iloc[i].longitudeUncertainty = get_uncertain_child(origin,'longitude')
+        catalog.iloc[i].depth, catalog.iloc[i].depthUncertainty = get_uncertain_child(origin,'depth')
         #agency/provider
         catalog.iloc[i].agency = origin.find('creationInfo').findtext('value')
         #magnitude
-        catalog.iloc[i].magnitude = float(event.find('magnitude').find('mag').findtext('value'))
+        magnitude = event.find('magnitude')
+        catalog.iloc[i].magnitude, catalog.iloc[i].magnitudeUncertainty = get_uncertain_child(magnitude,'mag')
+        #originUncertainty
+        originUncertainty = event.find('originUncertainty')
+        catalog.iloc[i].horizontalUncertainty = originUncertainty.find('horizontalUncertainty').findtext('value')
+        catalog.iloc[i].minHorizontalUncertainty = originUncertainty.find('minHorizontalUncertainty').findtext('value')
+        catalog.iloc[i].maxHorizontalUncertainty = originUncertainty.find('maxHorizontalUncertainty').findtext('value')
+        catalog.iloc[i].horizontalUncertainty = originUncertainty.find('azimuthMaxHorizontalUncertainty').findtext('value')
+
         #plane
         nodalPlanes = event.find('focalMechanism').find('nodalPlanes')
         preferredPlane = nodalPlanes.findtext('preferredPlane')
-        catalog.iloc[i].strike = float(nodalPlanes.find(preferredPlane).find('strike').findtext('value'))
-        catalog.iloc[i].dip = float(nodalPlanes.find(preferredPlane).find('dip').findtext('value'))
-        catalog.iloc[i].rake = float(nodalPlanes.find(preferredPlane).find('rake').findtext('value'))
+        preferredPlane = nodalPlanes.find(preferredPlane)
+        #GET uncertain child!!
+        catalog.iloc[i].strike,catalog.iloc[i].strikeUncertainty =get_uncertain_child(preferredPlane,'strike')
+        catalog.iloc[i].dip   ,catalog.iloc[i].dipUncertainty  = get_uncertain_child(preferredPlane,'dip')
+        catalog.iloc[i].rake  ,catalog.iloc[i].rakeUncertainty = get_uncertain_child(preferredPlane,'rake')
+        #catalog.iloc[i].strike = float(nodalPlanes.find(preferredPlane).find('strike').findtext('value'))
+        #catalog.iloc[i].dip = float(nodalPlanes.find(preferredPlane).find('dip').findtext('value'))
+        #catalog.iloc[i].rake = float(nodalPlanes.find(preferredPlane).find('rake').findtext('value'))
 
     return catalog
