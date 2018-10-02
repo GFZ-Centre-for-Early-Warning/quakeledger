@@ -135,25 +135,25 @@ def main():
 #    #p=0
 #    p=0.1 #deaggregation PSHA 10% within 50 years
 
-lonmin=float(sys.argv[1])
-lonmax=float(sys.argv[2])
-latmin=float(sys.argv[3])
-latmax=float(sys.argv[4])
-mmin=float(sys.argv[5])
-mmax=float(sys.argv[6])
-zmin=float(sys.argv[7])
-zmax=float(sys.argv[8])
-p=float(sys.argv[9])
-etype=sys.argv[10]
-tlon=float(sys.argv[11])
-tlat=float(sys.argv[12])
+    lonmin=float(sys.argv[1])
+    lonmax=float(sys.argv[2])
+    latmin=float(sys.argv[3])
+    latmax=float(sys.argv[4])
+    mmin=float(sys.argv[5])
+    mmax=float(sys.argv[6])
+    zmin=float(sys.argv[7])
+    zmax=float(sys.argv[8])
+    p=float(sys.argv[9])
+    etype=sys.argv[10]
+    tlon=float(sys.argv[11])
+    tlat=float(sys.argv[12])
 
-selected = query_events(db,lonmin=lonmin,lonmax=lonmax,latmin=latmin,latmax=latmax,mmin=mmin,mmax=mmax,zmin=zmin,zmax=zmax,p=p,tlat=tlat,tlon=tlon,etype=etype)
-##selected = query_events(db,p=p,etype=etype)
-#
-#test writing
-with open('test.xml','w') as f:
-    f.write(selected)
+    selected = query_events(db,lonmin=lonmin,lonmax=lonmax,latmin=latmin,latmax=latmax,mmin=mmin,mmax=mmax,zmin=zmin,zmax=zmax,p=p,tlat=tlat,tlon=tlon,etype=etype)
+    ##selected = query_events(db,p=p,etype=etype)
+    #
+    #test writing
+    with open('test.xml','w') as f:
+        f.write(selected)
 
 if __name__ =='__main__':
     main()
