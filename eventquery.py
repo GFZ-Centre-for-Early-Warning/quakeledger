@@ -4,23 +4,19 @@ import lxml.etree as le
 import quakeml
 import disaggregation_oq_sources as dos
 import sys
+import sqlite3
 
 #DUMMY DATA STUFF SHOULD BE CHANGED AS SOON AS STORAGE ETC IS FINALLY DECIDED
 #FIXME:currently only csv
-def read_database(conn):
-    '''
-    get data from database
-    '''
-    return pandas.read_csv(conn)
-
 def connect(provider='GFZ'):
     '''
     connects to service
     '''
     filepath=os.path.dirname(__file__)
-    filename = os.path.join(filepath,"valparaiso_v1.3.csv")
+    filename = os.path.join(filepath,'sqlite3.db')
+    con = sqlite3.connect(filename)
     if provider=='GFZ':
-        return read_database(filename)
+        return con
 
 #FUNCTIONS
 def convert_360(lon):
@@ -56,7 +52,7 @@ def filter_magnitude(db,mmin,mmax):
     return db[(db.magnitude >= mmin) & (db.magnitude <= mmax)]
 
 #QUERY
-def query_events(db, num_events = -1, lonmin=-180,lonmax=180,latmin=-90,latmax=90,mmin=0,mmax=12,zmin=0,zmax=999,p=0,tlat=0,tlon=0,etype='stochastic'):
+def query_events(con, num_events = -1, lonmin=-180,lonmax=180,latmin=-90,latmax=90,mmin=0,mmax=12,zmin=0,zmax=999,p=0,tlat=0,tlon=0,etype='stochastic'):
     '''
     Returns set of events
     type can be:
@@ -76,12 +72,31 @@ def query_events(db, num_events = -1, lonmin=-180,lonmax=180,latmin=-90,latmax=9
         - probability: p (interpretation depends on type see above)
     '''
     #filter type and probability
+    db = pandas.read_sql('''
+        select 
+            v.eventID, v.Agency, 
+            v.Identifier, v.year, 
+            v.month, v.day, 
+            v.hour, v.minute, 
+            v.second, v.timeUncertainty,
+            v.longitude, v.longitudeUncertainty, 
+            v.latitude, v.latitudeUncertainty, 
+            v.horizontalUncertainty, v.minHorizontalUncertainty,
+            v.maxHorizontalUncertainty, v.azimuthMaxHorizontalUncertainty,
+            v.depth, v.depthUncertainty, 
+            v.magnitude, v.magnitudeUncertainty,
+            v.rake, v.rakeUncertainty, 
+            v.dip, v.dipUncertainty, 
+            v.strike, v.strikeUncertainty,
+            v.type, v.probability
+        from valparaiso v
+    ''', con)
     selected = filter_type(db,etype,p)
 
     #deaggregation
     if etype == 'deaggregation':
         #get events matching deaggregation for target
-        selected = dos.match_disaggregation(selected,tlat,tlon,p)
+        selected = dos.match_disaggregation(selected,tlat,tlon,p, con)
 
     #convert 360 degree longitude in case
     if lonmin > 180:
@@ -110,7 +125,7 @@ def query_events(db, num_events = -1, lonmin=-180,lonmax=180,latmin=-90,latmax=9
 
 def main():
     #Program execution
-    db = connect()
+    con = connect()
 
 #    #test query params
 #    lonmin=288
@@ -146,7 +161,7 @@ def main():
     tlon=float(sys.argv[11])
     tlat=float(sys.argv[12])
 
-    selected = query_events(db,lonmin=lonmin,lonmax=lonmax,latmin=latmin,latmax=latmax,mmin=mmin,mmax=mmax,zmin=zmin,zmax=zmax,p=p,tlat=tlat,tlon=tlon,etype=etype)
+    selected = query_events(con,lonmin=lonmin,lonmax=lonmax,latmin=latmin,latmax=latmax,mmin=mmin,mmax=mmax,zmin=zmin,zmax=zmax,p=p,tlat=tlat,tlon=tlon,etype=etype)
     ##selected = query_events(db,p=p,etype=etype)
     #
     #test writing
