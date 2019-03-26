@@ -66,9 +66,14 @@ def match_disaggregation(ruptures,lat,lon,poe, con):
     slat = nearest_site.lat
     sid = nearest_site.sid
     #get deaggregation
-    dr = pandas.read_sql('select sid, poe50y, Lon, Lat, Mag, poe from mean_disagg', con)
-    #get that for specified hazard level and site
-    dr = dr[(dr.sid==sid) & (dr.poe50y==poe)]
+    dr = pandas.read_sql('''
+        select 
+            sid, poe50y, Lon, 
+            Lat, Mag, poe 
+        from mean_disagg
+        where sid = {sid}
+        and poe50y = {poe}
+    '''.format(sid = sid, poe = float(poe)), con)
     #determine precision
     plon = round(min(np.diff(dr.Lon.unique())),5)
     plat = round(min(np.diff(dr.Lat.unique())),5)

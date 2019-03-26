@@ -7,7 +7,6 @@ import sys
 import sqlite3
 
 #DUMMY DATA STUFF SHOULD BE CHANGED AS SOON AS STORAGE ETC IS FINALLY DECIDED
-#FIXME:currently only csv
 def connect(provider='GFZ'):
     '''
     connects to service
@@ -25,31 +24,45 @@ def convert_360(lon):
     '''
     return lon-360
 
-def filter_spatial(db,lonmin=-180,lonmax=180,latmin=-90,latmax=90,zmin=0,zmax=999):
+def filter_spatial(query,lonmin=-180,lonmax=180,latmin=-90,latmax=90,zmin=0,zmax=999):
     '''
     filters spatial
     '''
-    return db[(db.longitude >= lonmin) & (db.longitude <= lonmax) & (db.latitude >= latmin) & (db.latitude <= latmax) & (db.depth >= zmin) & (db.depth <= zmax)]
+    return query + """ 
+        and v.longitude >= {lonmin} 
+        and v.longitude <= {lonmax} 
+        and v.latitude >= {latmin} 
+        and v.latitude  <= {latmax} 
+        and v.depth >= {zmin} 
+        and v.depth <= {zmax}""".format(
+                lonmin=float(lonmin), 
+                lonmax=float(lonmax), 
+                latmin=float(latmin), 
+                latmax=float(latmax), 
+                zmin=float(zmin), 
+                zmax=float(zmax))
 
-def filter_type(db,etype,probability):
+def filter_type(query,etype,probability):
     '''
     filters event type and probability
     '''
     #NOTE: probability has no effect currently on historic+expert event filters
     if etype in ['expert','observed']:
-        return db[(db.type==etype)]
+        return query + " and v.type = '" + etype + "'"
     elif etype in ['stochastic']:
         #return db[(db.type==etype) & (abs(db.probability-p) < 10**-5)]
-        return db[(db.type==etype) & (db.probability > probability)]
+        return query + " and v.type = '" + etype + "' and v.probability > " + probability
     elif etype in ['deaggregation']:
         #get stochastic events
-        return db[(db.type=='stochastic')]
+        return query + " and v.type = 'stochastic'"
 
-def filter_magnitude(db,mmin,mmax):
+def filter_magnitude(query,mmin,mmax):
     '''
     filters magnitude
     '''
-    return db[(db.magnitude >= mmin) & (db.magnitude <= mmax)]
+    return query + " and v.magnitude >= {mmin} and v.magnitude <= {mmax}".format(
+            mmin=float(mmin),
+            mmax=float(mmax))
 
 #QUERY
 def query_events(con, num_events = -1, lonmin=-180,lonmax=180,latmin=-90,latmax=90,mmin=0,mmax=12,zmin=0,zmax=999,p=0,tlat=0,tlon=0,etype='stochastic'):
@@ -72,7 +85,7 @@ def query_events(con, num_events = -1, lonmin=-180,lonmax=180,latmin=-90,latmax=
         - probability: p (interpretation depends on type see above)
     '''
     #filter type and probability
-    db = pandas.read_sql('''
+    query = '''
         select 
             v.eventID, v.Agency, 
             v.Identifier, v.year, 
@@ -90,13 +103,20 @@ def query_events(con, num_events = -1, lonmin=-180,lonmax=180,latmin=-90,latmax=
             v.strike, v.strikeUncertainty,
             v.type, v.probability
         from valparaiso v
-    ''', con)
-    selected = filter_type(db,etype,p)
+        where 1=1
+    '''
+    query = filter_type(query,etype,p)
 
-    #deaggregation
-    if etype == 'deaggregation':
-        #get events matching deaggregation for target
-        selected = dos.match_disaggregation(selected,tlat,tlon,p, con)
+    # in the original script there the order
+    # is first to match disaggregation
+    # and then use all the other filters
+    # (spatial and magnitude)
+    # 
+    # however, to get better performance
+    # I try to switch the ordering
+    # because in most cases there should be no
+    # big difference in the location before
+    # and after binning
 
     #convert 360 degree longitude in case
     if lonmin > 180:
@@ -105,13 +125,19 @@ def query_events(con, num_events = -1, lonmin=-180,lonmax=180,latmin=-90,latmax=
         lonmax = convert_360(lonmax)
 
     #spatial filter
-    selected = filter_spatial(selected,lonmin,lonmax,latmin,latmax,zmin,zmax)
+    query = filter_spatial(query,lonmin,lonmax,latmin,latmax,zmin,zmax)
 
     #magnitude filter
-    selected = filter_magnitude(selected,mmin,mmax)
-
+    query = filter_magnitude(query,mmin,mmax)
     #sort according to magnitude
-    selected= selected.sort_values('magnitude',ascending=False)
+    query = query + " order by v.magnitude desc"
+    selected = pandas.read_sql(query, con)
+
+    #deaggregation
+    if etype == 'deaggregation':
+        #get events matching deaggregation for target
+        selected = dos.match_disaggregation(selected,tlat,tlon,p, con)
+
 
     #filter according to num_events
     if (num_events > 0 ):
