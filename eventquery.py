@@ -1,9 +1,7 @@
 import pandas
 import os
 import lxml.etree as le
-#from . import quakeml
 import quakeml
-#from . import disaggregation_oq_sources as dos
 import disaggregation_oq_sources as dos
 import sys
 
