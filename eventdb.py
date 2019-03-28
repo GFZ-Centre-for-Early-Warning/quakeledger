@@ -38,7 +38,7 @@ class Site(Base):
 
 class Event(Base):
     '''Class to access to data of the earth quake events'''
-    __tablename__ = 'valparaiso'
+    __tablename__ = 'events'
     id = Column('index', Integer, primary_key=True)
     eventID = Column('eventID', String)
     identifier = Column('Identifier', String)
