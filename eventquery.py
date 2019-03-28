@@ -4,7 +4,9 @@ import lxml.etree as le
 import quakeml
 import disaggregation_oq_sources as dos
 import sys
-import sqlite3
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from dbvalparaiso import Valparaiso
 
 #DUMMY DATA STUFF SHOULD BE CHANGED AS SOON AS STORAGE ETC IS FINALLY DECIDED
 def connect(provider='GFZ'):
@@ -13,9 +15,9 @@ def connect(provider='GFZ'):
     '''
     filepath=os.path.dirname(__file__)
     filename = os.path.join(filepath,'sqlite3.db')
-    con = sqlite3.connect(filename)
+    engine = create_engine('sqlite:///' + filename)
     if provider=='GFZ':
-        return con
+        return engine
 
 #FUNCTIONS
 def convert_360(lon):
@@ -28,19 +30,14 @@ def filter_spatial(query,lonmin=-180,lonmax=180,latmin=-90,latmax=90,zmin=0,zmax
     '''
     filters spatial
     '''
-    return query + """ 
-        and v.longitude >= {lonmin} 
-        and v.longitude <= {lonmax} 
-        and v.latitude >= {latmin} 
-        and v.latitude  <= {latmax} 
-        and v.depth >= {zmin} 
-        and v.depth <= {zmax}""".format(
-                lonmin=float(lonmin), 
-                lonmax=float(lonmax), 
-                latmin=float(latmin), 
-                latmax=float(latmax), 
-                zmin=float(zmin), 
-                zmax=float(zmax))
+    query = query.filter(Valparaiso.longitude >= lonmin)
+    query = query.filter(Valparaiso.longitude <= lonmax)
+    query = query.filter(Valparaiso.latitude >= latmin)
+    query = query.filter(Valparaiso.latitude <= latmax)
+    query = query.filter(Valparaiso.depth >= zmin)
+    query = query.filter(Valparaiso.depth <= zmax)
+
+    return query
 
 def filter_type(query,etype,probability):
     '''
@@ -48,24 +45,26 @@ def filter_type(query,etype,probability):
     '''
     #NOTE: probability has no effect currently on historic+expert event filters
     if etype in ['expert','observed']:
-        return query + " and v.type = '" + etype + "'"
+        return query.filter_by(type_=etype)
     elif etype in ['stochastic']:
         #return db[(db.type==etype) & (abs(db.probability-p) < 10**-5)]
-        return query + " and v.type = '" + etype + "' and v.probability > " + probability
+        query = query.filter_by(type_ = etype)
+        query = query.filter_by(probability > probability)
+        return query
     elif etype in ['deaggregation']:
         #get stochastic events
-        return query + " and v.type = 'stochastic'"
+        return query.filter_by(type_ = 'stochastic')
 
 def filter_magnitude(query,mmin,mmax):
     '''
     filters magnitude
     '''
-    return query + " and v.magnitude >= {mmin} and v.magnitude <= {mmax}".format(
-            mmin=float(mmin),
-            mmax=float(mmax))
+    query = query.filter(Valparaiso.magnitude >= mmin)
+    query = query.filter(Valparaiso.magnitude <= mmax)
+    return query
 
 #QUERY
-def query_events(con, num_events = -1, lonmin=-180,lonmax=180,latmin=-90,latmax=90,mmin=0,mmax=12,zmin=0,zmax=999,p=0,tlat=0,tlon=0,etype='stochastic'):
+def query_events(engine, num_events = -1, lonmin=-180,lonmax=180,latmin=-90,latmax=90,mmin=0,mmax=12,zmin=0,zmax=999,p=0,tlat=0,tlon=0,etype='stochastic'):
     '''
     Returns set of events
     type can be:
@@ -85,26 +84,9 @@ def query_events(con, num_events = -1, lonmin=-180,lonmax=180,latmin=-90,latmax=
         - probability: p (interpretation depends on type see above)
     '''
     #filter type and probability
-    query = '''
-        select 
-            v.eventID, v.Agency, 
-            v.Identifier, v.year, 
-            v.month, v.day, 
-            v.hour, v.minute, 
-            v.second, v.timeUncertainty,
-            v.longitude, v.longitudeUncertainty, 
-            v.latitude, v.latitudeUncertainty, 
-            v.horizontalUncertainty, v.minHorizontalUncertainty,
-            v.maxHorizontalUncertainty, v.azimuthMaxHorizontalUncertainty,
-            v.depth, v.depthUncertainty, 
-            v.magnitude, v.magnitudeUncertainty,
-            v.rake, v.rakeUncertainty, 
-            v.dip, v.dipUncertainty, 
-            v.strike, v.strikeUncertainty,
-            v.type, v.probability
-        from valparaiso v
-        where 1=1
-    '''
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    query = session.query(Valparaiso)    
     query = filter_type(query,etype,p)
 
     # in the original script there the order
@@ -130,13 +112,14 @@ def query_events(con, num_events = -1, lonmin=-180,lonmax=180,latmin=-90,latmax=
     #magnitude filter
     query = filter_magnitude(query,mmin,mmax)
     #sort according to magnitude
-    query = query + " order by v.magnitude desc"
-    selected = pandas.read_sql(query, con)
+    query = query.order_by(Valparaiso.magnitude.desc())
+    selected = pandas.read_sql(query.statement, query.session.bind)
+    selected.fillna(value=pandas.np.nan, inplace=True)
 
     #deaggregation
     if etype == 'deaggregation':
         #get events matching deaggregation for target
-        selected = dos.match_disaggregation(selected,tlat,tlon,p, con)
+        selected = dos.match_disaggregation(selected,tlat,tlon,p, session)
 
 
     #filter according to num_events

@@ -4,6 +4,8 @@
 import os
 import pandas
 import numpy as np
+from dbsites import Site
+from dbmeandisagg import MeanDisagg
 
 def binning_xyz(data,px,py,pz):
     '''
@@ -50,7 +52,7 @@ def find_nearest_site(sites, lon, lat):
     ind = dists.idxmin()
     return sites.iloc[ind]
 
-def match_disaggregation(ruptures,lat,lon,poe, con):
+def match_disaggregation(ruptures,lat,lon,poe,session):
     '''
     Given a set of ruptures, a target with longitude/latitude,
     and a target exceedance probability (e.g., 0.1 = 10%) for 50 years return period
@@ -58,22 +60,20 @@ def match_disaggregation(ruptures,lat,lon,poe, con):
     from the rupture for each bin
     '''
     #read deaggregation sites
-    sites = pandas.read_sql('select sid, lon, lat from sites', con)
+    sites_query = session.query(Site)
+    sites = pandas.read_sql(sites_query.statement, sites_query.session.bind)
 
     #find closest match to target
     nearest_site = find_nearest_site(sites, lon, lat)
     slon = nearest_site.lon
     slat = nearest_site.lat
     sid = nearest_site.sid
-    #get deaggregation
-    dr = pandas.read_sql('''
-        select 
-            sid, poe50y, Lon, 
-            Lat, Mag, poe 
-        from mean_disagg
-        where sid = {sid}
-        and poe50y = {poe}
-    '''.format(sid = sid, poe = float(poe)), con)
+
+    mean_disagg_query = session.query(MeanDisagg)
+    mean_disagg_query = mean_disagg_query.filter_by(sid=sid)
+    mean_disagg_query = mean_disagg_query.filter_by(poe50y=poe)
+    dr = pandas.read_sql(mean_disagg_query.statement, mean_disagg_query.session.bind)
+
     #determine precision
     plon = round(min(np.diff(dr.Lon.unique())),5)
     plat = round(min(np.diff(dr.Lat.unique())),5)
