@@ -44,8 +44,8 @@ def events2quakeml(catalog,provider='GFZ'):
     Given a pandas dataframe with events returns QuakeML version of
     the catalog
     '''
-    xml_namespace = 'http://quakeml.org/xmlns/quakeml/1.2'
-    quakeml = le.Element('eventParameters',namespace=xml_namespace)
+    xml_namespace = 'http://quakeml.org/xmlns/bed/1.2'
+    quakeml = le.Element('eventParameters', xmlns=xml_namespace)
     #go through all events
     for i in range(len(catalog)):
         quake = catalog.iloc[i]
