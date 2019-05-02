@@ -3,6 +3,7 @@
 # and vice versa
 import pandas
 import lxml.etree as le
+import math
 
 # TODO: publicID in quakeml should refer to webservice address
 # TODO: add second nodal plane!?
@@ -45,6 +46,13 @@ def add_uncertain_child(parent, childname, value, uncertainty):
     return parent
 
 
+def format_xsdouble(value):
+    if math.isnan(value):
+        return 'NaN'
+
+    return str(value)
+
+
 def events2quakeml(catalog, provider='GFZ'):
     '''
     Given a pandas dataframe with events returns QuakeML version of
@@ -67,25 +75,25 @@ def events2quakeml(catalog, provider='GFZ'):
         text.text = str(quake.type)
         # origin
         origin = le.SubElement(event, 'origin', {'publicID': ID_PREFIX + str(quake.eventID)})
-        origin = add_uncertain_child(origin, childname='time', value=event2utc(quake), uncertainty=str(quake.timeUncertainty))
+        origin = add_uncertain_child(origin, childname='time', value=event2utc(quake), uncertainty=format_xsdouble(quake.timeUncertainty))
         # time = le.SubElement(origin, 'time')
         # value = le.SubElement(time, 'value')
         # value.text = event2utc(quake)
         # uncertainty = le.SubElement(time, 'uncertainty')
         # uncertainty.text = str(quake.timeUncertainty)
-        origin = add_uncertain_child(origin, childname='latitude', value=str(quake.latitude), uncertainty=str(quake.latitudeUncertainty))
+        origin = add_uncertain_child(origin, childname='latitude', value=str(quake.latitude), uncertainty=format_xsdouble(quake.latitudeUncertainty))
         # latitude = le.SubElement(origin, 'latitude')
         # value = le.SubElement(latitude, 'value')
         # value.text = str(quake.latitude)
         # uncertainty = le.SubElement(latitude, 'uncertainty')
         # uncertainty.text = str(quake.sigmaLatitude)
-        origin = add_uncertain_child(origin, childname='longitude', value=str(quake.longitude), uncertainty=str(quake.longitudeUncertainty))
+        origin = add_uncertain_child(origin, childname='longitude', value=str(quake.longitude), uncertainty=format_xsdouble(quake.longitudeUncertainty))
         # longitude = le.SubElement(origin, 'longitude')
         # value = le.SubElement(longitude, 'value')
         # value.text = str(quake.longitude)
         # uncertainty = le.SubElement(longitude, 'uncertainty')
         # uncertainty.text = str(quake.sigmaLongitude)
-        origin = add_uncertain_child(origin, childname='depth', value=str(quake.depth), uncertainty=str(quake.depthUncertainty))
+        origin = add_uncertain_child(origin, childname='depth', value=str(quake.depth), uncertainty=format_xsdouble(quake.depthUncertainty))
         # depth = le.SubElement(origin, 'depth')
         # value = le.SubElement(depth, 'value')
         # value.text = str(quake.depth)
@@ -100,16 +108,16 @@ def events2quakeml(catalog, provider='GFZ'):
         # preferredDescription = le.SubElement(originUncertainty, 'originUncertainty')
         # preferredDescription.text = quake.preferredOriginUncertainty
         horizontalUncertainty = le.SubElement(originUncertainty, 'horizontalUncertainty')
-        horizontalUncertainty.text = str(quake.horizontalUncertainty)
+        horizontalUncertainty.text = format_xsdouble(quake.horizontalUncertainty)
         minHorizontalUncertainty = le.SubElement(originUncertainty, 'minHorizontalUncertainty')
-        minHorizontalUncertainty.text = str(quake.minHorizontalUncertainty)
+        minHorizontalUncertainty.text = format_xsdouble(quake.minHorizontalUncertainty)
         maxHorizontalUncertainty = le.SubElement(originUncertainty, 'maxHorizontalUncertainty')
-        maxHorizontalUncertainty.text = str(quake.maxHorizontalUncertainty)
+        maxHorizontalUncertainty.text = format_xsdouble(quake.maxHorizontalUncertainty)
         azimuthMaxHorizontalUncertainty = le.SubElement(originUncertainty, 'azimuthMaxHorizontalUncertainty')
-        azimuthMaxHorizontalUncertainty.text = str(quake.azimuthMaxHorizontalUncertainty)
+        azimuthMaxHorizontalUncertainty.text = format_xsdouble(quake.azimuthMaxHorizontalUncertainty)
         # magnitude
         magnitude = le.SubElement(event, 'magnitude', {'publicID': ID_PREFIX + str(quake.eventID)})
-        magnitude = add_uncertain_child(magnitude, childname='mag', value=str(quake.magnitude), uncertainty=str(quake.magnitudeUncertainty))
+        magnitude = add_uncertain_child(magnitude, childname='mag', value=str(quake.magnitude), uncertainty=format_xsdouble(quake.magnitudeUncertainty))
         # mag = le.SubElement(magnitude, 'mag')
         # value = le.SubElement(mag, 'value')
         # value.text = str(quake.magnitude)
@@ -124,19 +132,19 @@ def events2quakeml(catalog, provider='GFZ'):
         focalMechanism = le.SubElement(event, 'focalMechanism', {'publicID': ID_PREFIX + str(quake.eventID)})
         nodalPlanes = le.SubElement(focalMechanism, 'nodalPlanes')
         nodalPlane1 = le.SubElement(nodalPlanes, 'nodalPlane1')
-        nodalPlane1 = add_uncertain_child(nodalPlane1, childname='strike', value=str(quake.strike), uncertainty=str(quake.strikeUncertainty))
+        nodalPlane1 = add_uncertain_child(nodalPlane1, childname='strike', value=str(quake.strike), uncertainty=format_xsdouble(quake.strikeUncertainty))
         # strike = le.SubElement(nodalPlane1, 'strike')
         # value  = le.SubElement(strike, 'value')
         # value.text = str(quake.strike)
         # uncertainty  = le.SubElement(strike, 'uncertainty')
         # uncertainty.text = str(quake.sigmaStrike)
-        nodalPlane1 = add_uncertain_child(nodalPlane1, childname='dip', value=str(quake.dip), uncertainty=str(quake.dipUncertainty))
+        nodalPlane1 = add_uncertain_child(nodalPlane1, childname='dip', value=str(quake.dip), uncertainty=format_xsdouble(quake.dipUncertainty))
         # dip = le.SubElement(nodalPlane1, 'dip')
         # value  = le.SubElement(dip, 'value')
         # value.text = str(quake.dip)
         # uncertainty  = le.SubElement(dip, 'uncertainty')
         # uncertainty.text = str(quake.sigmaDip)
-        nodalPlane1 = add_uncertain_child(nodalPlane1, childname='rake', value=str(quake.rake), uncertainty=str(quake.rakeUncertainty))
+        nodalPlane1 = add_uncertain_child(nodalPlane1, childname='rake', value=str(quake.rake), uncertainty=format_xsdouble(quake.rakeUncertainty))
         # rake = le.SubElement(nodalPlane1, 'rake')
         # value  = le.SubElement(rake, 'value')
         # value.text = str(quake.rake)
