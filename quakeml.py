@@ -130,7 +130,7 @@ def events2quakeml(catalog, provider='GFZ'):
         author.text = provider
         # plane (write only fault plane not auxilliary)
         focalMechanism = le.SubElement(event, 'focalMechanism', {'publicID': ID_PREFIX + str(quake.eventID)})
-        nodalPlanes = le.SubElement(focalMechanism, 'nodalPlanes')
+        nodalPlanes = le.SubElement(focalMechanism, 'nodalPlanes', {'preferredPlane': '1'})
         nodalPlane1 = le.SubElement(nodalPlanes, 'nodalPlane1')
         nodalPlane1 = add_uncertain_child(nodalPlane1, childname='strike', value=str(quake.strike), uncertainty=format_xsdouble(quake.strikeUncertainty))
         # strike = le.SubElement(nodalPlane1, 'strike')
@@ -150,8 +150,6 @@ def events2quakeml(catalog, provider='GFZ'):
         # value.text = str(quake.rake)
         # uncertainty  = le.SubElement(rake, 'uncertainty')
         # uncertainty.text = str(quake.sigmaRake)
-        preferredPlane = le.SubElement(nodalPlanes, 'preferredPlane')
-        preferredPlane.text = 'nodalPlane1'
 
     # return str(le.tostring(quakeml, pretty_print=True, xml_declaration=True), encoding='utf-8')
     return le.tostring(quakeml, pretty_print=True, encoding='unicode')
