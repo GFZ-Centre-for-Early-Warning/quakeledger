@@ -103,7 +103,7 @@ def events2quakeml(catalog, provider='GFZ'):
         author = le.SubElement(creationInfo, 'value')
         author.text = provider
         # originUncertainty
-        originUncertainty = le.SubElement(event, 'originUncertainty')
+        originUncertainty = le.SubElement(origin, 'originUncertainty')
         # NOTE: imo this should be decided during processing and not on data level --> NOT included
         # preferredDescription = le.SubElement(originUncertainty, 'originUncertainty')
         # preferredDescription.text = quake.preferredOriginUncertainty
