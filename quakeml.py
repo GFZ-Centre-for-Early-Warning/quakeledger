@@ -100,7 +100,7 @@ def events2quakeml(catalog, provider='GFZ'):
         # uncertainty = le.SubElement(depth, 'uncertainty')
         # uncertainty.text = str(quake.depthUncertainty)
         creationInfo = le.SubElement(origin, 'creationInfo')
-        author = le.SubElement(creationInfo, 'value')
+        author = le.SubElement(creationInfo, 'author')
         author.text = provider
         # originUncertainty
         originUncertainty = le.SubElement(origin, 'originUncertainty')
@@ -126,7 +126,7 @@ def events2quakeml(catalog, provider='GFZ'):
         mtype = le.SubElement(magnitude, 'type')
         mtype.text = 'MW'
         creationInfo = le.SubElement(magnitude, 'creationInfo')
-        author = le.SubElement(creationInfo, 'value')
+        author = le.SubElement(creationInfo, 'author')
         author.text = provider
         # plane (write only fault plane not auxilliary)
         focalMechanism = le.SubElement(event, 'focalMechanism', {'publicID': ID_PREFIX + str(quake.eventID)})
