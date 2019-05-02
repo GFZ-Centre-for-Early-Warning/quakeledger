@@ -7,6 +7,8 @@ import lxml.etree as le
 # TODO: publicID in quakeml should refer to webservice address
 # TODO: add second nodal plane!?
 
+ID_PREFIX = 'quakeml:quakeledger/'
+
 
 def event2utc(event):
     '''
@@ -49,22 +51,22 @@ def events2quakeml(catalog, provider='GFZ'):
     the catalog
     '''
     xml_namespace = 'http://quakeml.org/xmlns/bed/1.2'
-    quakeml = le.Element('eventParameters', xmlns=xml_namespace)
+    quakeml = le.Element('eventParameters', xmlns=xml_namespace, publicID=ID_PREFIX + '0')
     # go through all events
     for i in range(len(catalog)):
         quake = catalog.iloc[i]
-        event = le.SubElement(quakeml, 'event', {'publicID': str(quake.eventID)})
+        event = le.SubElement(quakeml, 'event', {'publicID': ID_PREFIX + str(quake.eventID)})
         preferredOriginID = le.SubElement(event, 'preferredOriginID')
-        preferredOriginID.text=str(quake.eventID)
+        preferredOriginID.text = ID_PREFIX + str(quake.eventID)
         preferredMagnitudeID = le.SubElement(event, 'preferredMagnitudeID')
-        preferredMagnitudeID.text=str(quake.eventID)
+        preferredMagnitudeID.text = ID_PREFIX + str(quake.eventID)
         qtype = le.SubElement(event, 'type')
         qtype.text = 'earthquake'
         description = le.SubElement(event, 'description')
         text = le.SubElement(description, 'text')
         text.text = str(quake.type)
         # origin
-        origin = le.SubElement(event, 'origin', {'publicID': str(quake.eventID)})
+        origin = le.SubElement(event, 'origin', {'publicID': ID_PREFIX + str(quake.eventID)})
         origin = add_uncertain_child(origin, childname='time', value=event2utc(quake), uncertainty=str(quake.timeUncertainty))
         # time = le.SubElement(origin, 'time')
         # value = le.SubElement(time, 'value')
@@ -106,7 +108,7 @@ def events2quakeml(catalog, provider='GFZ'):
         azimuthMaxHorizontalUncertainty = le.SubElement(originUncertainty, 'azimuthMaxHorizontalUncertainty')
         azimuthMaxHorizontalUncertainty.text = str(quake.azimuthMaxHorizontalUncertainty)
         # magnitude
-        magnitude = le.SubElement(event, 'magnitude', {'publicID': str(quake.eventID)})
+        magnitude = le.SubElement(event, 'magnitude', {'publicID': ID_PREFIX + str(quake.eventID)})
         magnitude = add_uncertain_child(magnitude, childname='mag', value=str(quake.magnitude), uncertainty=str(quake.magnitudeUncertainty))
         # mag = le.SubElement(magnitude, 'mag')
         # value = le.SubElement(mag, 'value')
@@ -119,7 +121,7 @@ def events2quakeml(catalog, provider='GFZ'):
         author = le.SubElement(creationInfo, 'value')
         author.text = provider
         # plane (write only fault plane not auxilliary)
-        focalMechanism = le.SubElement(event, 'focalMechanism', {'publicID': str(quake.eventID)})
+        focalMechanism = le.SubElement(event, 'focalMechanism', {'publicID': ID_PREFIX + str(quake.eventID)})
         nodalPlanes = le.SubElement(focalMechanism, 'nodalPlanes')
         nodalPlane1 = le.SubElement(nodalPlanes, 'nodalPlane1')
         nodalPlane1 = add_uncertain_child(nodalPlane1, childname='strike', value=str(quake.strike), uncertainty=str(quake.strikeUncertainty))
