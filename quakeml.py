@@ -19,6 +19,14 @@ def event2utc(event):
     return '{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:09f}Z'.format(int(d.year), int(max(d.month, 1)), int(max(d.day, 1)), int(d.hour), int(d.minute), d.second)
 
 
+def add_id_prefix(element):
+    '''
+    Adds an id prefix if necessary.
+    '''
+    if element.startswith(ID_PREFIX):
+        return element
+    return ID_PREFIX + element
+
 def utc2event(utc):
     '''
     given utc string returns list with year,month,day,hour,minute,second
@@ -47,7 +55,11 @@ def add_uncertain_child(parent, childname, value, uncertainty):
 
 
 def format_xsdouble(value):
-    if math.isnan(value):
+    '''
+    Converts the value for a xsdouble field
+    to a number or NaN.
+    '''
+    if value is None or math.isnan(value):
         return 'NaN'
 
     return str(value)
@@ -59,22 +71,22 @@ def events2quakeml(catalog, provider='GFZ'):
     the catalog
     '''
     xml_namespace = 'http://quakeml.org/xmlns/bed/1.2'
-    quakeml = le.Element('eventParameters', xmlns=xml_namespace, publicID=ID_PREFIX + '0')
+    quakeml = le.Element('eventParameters', xmlns=xml_namespace, publicID=add_id_prefix('0'))
     # go through all events
     for i in range(len(catalog)):
         quake = catalog.iloc[i]
-        event = le.SubElement(quakeml, 'event', {'publicID': ID_PREFIX + str(quake.eventID)})
+        event = le.SubElement(quakeml, 'event', {'publicID': add_id_prefix(str(quake.eventID))})
         preferredOriginID = le.SubElement(event, 'preferredOriginID')
-        preferredOriginID.text = ID_PREFIX + str(quake.eventID)
+        preferredOriginID.text = add_id_prefix(str(quake.eventID))
         preferredMagnitudeID = le.SubElement(event, 'preferredMagnitudeID')
-        preferredMagnitudeID.text = ID_PREFIX + str(quake.eventID)
+        preferredMagnitudeID.text = add_id_prefix(str(quake.eventID))
         qtype = le.SubElement(event, 'type')
         qtype.text = 'earthquake'
         description = le.SubElement(event, 'description')
         text = le.SubElement(description, 'text')
         text.text = str(quake.type)
         # origin
-        origin = le.SubElement(event, 'origin', {'publicID': ID_PREFIX + str(quake.eventID)})
+        origin = le.SubElement(event, 'origin', {'publicID': add_id_prefix(str(quake.eventID))})
         origin = add_uncertain_child(origin, childname='time', value=event2utc(quake), uncertainty=format_xsdouble(quake.timeUncertainty))
         # time = le.SubElement(origin, 'time')
         # value = le.SubElement(time, 'value')
@@ -116,7 +128,7 @@ def events2quakeml(catalog, provider='GFZ'):
         azimuthMaxHorizontalUncertainty = le.SubElement(originUncertainty, 'azimuthMaxHorizontalUncertainty')
         azimuthMaxHorizontalUncertainty.text = format_xsdouble(quake.azimuthMaxHorizontalUncertainty)
         # magnitude
-        magnitude = le.SubElement(event, 'magnitude', {'publicID': ID_PREFIX + str(quake.eventID)})
+        magnitude = le.SubElement(event, 'magnitude', {'publicID': add_id_prefix(str(quake.eventID))})
         magnitude = add_uncertain_child(magnitude, childname='mag', value=str(quake.magnitude), uncertainty=format_xsdouble(quake.magnitudeUncertainty))
         # mag = le.SubElement(magnitude, 'mag')
         # value = le.SubElement(mag, 'value')
@@ -129,7 +141,7 @@ def events2quakeml(catalog, provider='GFZ'):
         author = le.SubElement(creationInfo, 'author')
         author.text = provider
         # plane (write only fault plane not auxilliary)
-        focalMechanism = le.SubElement(event, 'focalMechanism', {'publicID': ID_PREFIX + str(quake.eventID)})
+        focalMechanism = le.SubElement(event, 'focalMechanism', {'publicID': add_id_prefix(str(quake.eventID))})
         nodalPlanes = le.SubElement(focalMechanism, 'nodalPlanes', {'preferredPlane': '1'})
         nodalPlane1 = le.SubElement(nodalPlanes, 'nodalPlane1')
         nodalPlane1 = add_uncertain_child(nodalPlane1, childname='strike', value=str(quake.strike), uncertainty=format_xsdouble(quake.strikeUncertainty))
@@ -160,15 +172,20 @@ def get_uncertain_child(parent, childname):
     Given a childname returns value and uncertainty
     '''
     try:
-        value = float(parent.find(childname).findtext('value'))
+        value = float(parent.find(childname).findtext(add_namespace('value')))
     except:
         value = float('NAN')
     try:
-        uncertainty = float(parent.find(childname).findtext('uncertainty'))
+        uncertainty = float(parent.find(childname).findtext(add_namespace('uncertainty')))
     except:
         uncertainty = float('NAN')
     return [value, uncertainty]
 
+def add_namespace(element):
+    '''
+    Adds the namespace to the quakeml xml elements.
+    '''
+    return '{http://quakeml.org/xmlns/bed/1.2}' + element
 
 def quakeml2events(quakemlfile, provider='GFZ'):
     '''
@@ -193,36 +210,37 @@ def quakeml2events(quakemlfile, provider='GFZ'):
         # get ID
         catalog.iloc[i].eventID = event.attrib['publicID']
         # type
-        catalog.iloc[i].type = event.find('description').findtext('text')
+        catalog.iloc[i].type = event.find(add_namespace('description')).findtext(add_namespace('text'))
         # origin
-        origin = event.find('origin')
+        origin = event.find(add_namespace('origin'))
         # time
-        catalog.iloc[i].year, catalog.iloc[i].month, catalog.iloc[i].day, catalog.iloc[i].hour, catalog.iloc[i].minute, catalog.iloc[i].second = utc2event(origin.find('time').findtext('value'))
-        catalog.iloc[i].timeUncertainty = float(origin.find('time').findtext('uncertainty'))
+        catalog.iloc[i].year, catalog.iloc[i].month, catalog.iloc[i].day, catalog.iloc[i].hour, catalog.iloc[i].minute, catalog.iloc[i].second = utc2event(
+            origin.find(add_namespace('time')).findtext(add_namespace('value')))
+        catalog.iloc[i].timeUncertainty = float(origin.find(add_namespace('time')).findtext(add_namespace('uncertainty')))
         # latitude/longitude/depth
-        catalog.iloc[i].latitude, catalog.iloc[i].latitudeUncertainty = get_uncertain_child(origin, 'latitude')
-        catalog.iloc[i].longitude, catalog.iloc[i].longitudeUncertainty = get_uncertain_child(origin, 'longitude')
-        catalog.iloc[i].depth, catalog.iloc[i].depthUncertainty = get_uncertain_child(origin, 'depth')
+        catalog.iloc[i].latitude, catalog.iloc[i].latitudeUncertainty = get_uncertain_child(origin, add_namespace('latitude'))
+        catalog.iloc[i].longitude, catalog.iloc[i].longitudeUncertainty = get_uncertain_child(origin, add_namespace('longitude'))
+        catalog.iloc[i].depth, catalog.iloc[i].depthUncertainty = get_uncertain_child(origin, add_namespace('depth'))
         # agency/provider
-        catalog.iloc[i].agency = origin.find('creationInfo').findtext('value')
+        catalog.iloc[i].agency = origin.find(add_namespace('creationInfo')).findtext(add_namespace('value'))
         # magnitude
-        magnitude = event.find('magnitude')
-        catalog.iloc[i].magnitude, catalog.iloc[i].magnitudeUncertainty = get_uncertain_child(magnitude, 'mag')
+        magnitude = event.find(add_namespace('magnitude'))
+        catalog.iloc[i].magnitude, catalog.iloc[i].magnitudeUncertainty = get_uncertain_child(magnitude, add_namespace('mag'))
         # originUncertainty
-        originUncertainty = event.find('originUncertainty')
-        catalog.iloc[i].horizontalUncertainty = originUncertainty.find('horizontalUncertainty').findtext('value')
-        catalog.iloc[i].minHorizontalUncertainty = originUncertainty.find('minHorizontalUncertainty').findtext('value')
-        catalog.iloc[i].maxHorizontalUncertainty = originUncertainty.find('maxHorizontalUncertainty').findtext('value')
-        catalog.iloc[i].horizontalUncertainty = originUncertainty.find('azimuthMaxHorizontalUncertainty').findtext('value')
+        originUncertainty = origin.find(add_namespace('originUncertainty'))
+        catalog.iloc[i].horizontalUncertainty = originUncertainty.find(add_namespace('horizontalUncertainty')).findtext(add_namespace('value'))
+        catalog.iloc[i].minHorizontalUncertainty = originUncertainty.find(add_namespace('minHorizontalUncertainty')).findtext(add_namespace('value'))
+        catalog.iloc[i].maxHorizontalUncertainty = originUncertainty.find(add_namespace('maxHorizontalUncertainty')).findtext(add_namespace('value'))
+        catalog.iloc[i].horizontalUncertainty = originUncertainty.find(add_namespace('azimuthMaxHorizontalUncertainty')).findtext(add_namespace('value'))
 
         # plane
-        nodalPlanes = event.find('focalMechanism').find('nodalPlanes')
-        preferredPlane = nodalPlanes.findtext('preferredPlane')
-        preferredPlane = nodalPlanes.find(preferredPlane)
+        nodalPlanes = event.find(add_namespace('focalMechanism')).find(add_namespace('nodalPlanes'))
+        preferredPlane = nodalPlanes.get('preferredPlane')
+        preferredPlane = nodalPlanes.find(add_namespace('nodalPlane' + preferredPlane))
         # GET uncertain child!!
-        catalog.iloc[i].strike, catalog.iloc[i].strikeUncertainty = get_uncertain_child(preferredPlane, 'strike')
-        catalog.iloc[i].dip   , catalog.iloc[i].dipUncertainty  = get_uncertain_child(preferredPlane, 'dip')
-        catalog.iloc[i].rake  , catalog.iloc[i].rakeUncertainty = get_uncertain_child(preferredPlane, 'rake')
+        catalog.iloc[i].strike, catalog.iloc[i].strikeUncertainty = get_uncertain_child(preferredPlane, add_namespace('strike'))
+        catalog.iloc[i].dip   , catalog.iloc[i].dipUncertainty  = get_uncertain_child(preferredPlane, add_namespace('dip'))
+        catalog.iloc[i].rake  , catalog.iloc[i].rakeUncertainty = get_uncertain_child(preferredPlane, add_namespace('rake'))
         # catalog.iloc[i].strike = float(nodalPlanes.find(preferredPlane).find('strike').findtext('value'))
         # catalog.iloc[i].dip = float(nodalPlanes.find(preferredPlane).find('dip').findtext('value'))
         # catalog.iloc[i].rake = float(nodalPlanes.find(preferredPlane).find('rake').findtext('value'))
