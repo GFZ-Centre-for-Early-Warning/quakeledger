@@ -29,6 +29,16 @@ class MapToAttributeWithPrefix():
 
     def __call__(self, old_series):
         return self._prefix + str(old_series[self._attribute])
+
+class MapToAttributeAndMapValues():
+    def __init__(self, attribute, lookup_table):
+        self._attribute = attribute
+        self._lookup_table = lookup_table
+    def __call_(self, old_series):
+        old_value = old_series[self._attribute]
+        if old_value in lookup_table.keys():
+            return lookup_table[old_value]
+        return old_value
         
 MAPPINGS = {
     'eventID': MapToAttributeWithPrefix(prefix='peru_', attribute='rupid'),
@@ -42,8 +52,8 @@ MAPPINGS = {
     'timeUncertainty': MapToNone(),
     'longitude': MapToAttribute('centroid_lon'),
     'longitudeUncertainty': MapToNone(),
-    'latitide': MapToAttribute('centroid_lat'),
-    'latitideUncertainty': MapToNone(),
+    'latitude': MapToAttribute('centroid_lat'),
+    'latitudeUncertainty': MapToNone(),
     'horizontalUncertainty': MapToNone(),
     'minHorizontalUncertainty': MapToNone(),
     'maxHorizontalUncertainty': MapToNone(),
@@ -63,7 +73,7 @@ MAPPINGS = {
     # we can map them afterwards with sql
     # but I'm still a bit unsure about
     # the values here
-    'type': MapToAttribute('type'),
+    'type': MapToAttributeAndMapValues('type', {'historic': 'observed'),
     'probability': MapToNone(),
 }
 
