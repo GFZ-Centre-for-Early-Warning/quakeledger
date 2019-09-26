@@ -186,6 +186,30 @@ class TestAll(unittest.TestCase, RunQuakeledgerMixin):
         events = self._get_events(eventlist)
         self.assertLess(0, len(events))
 
+    def test_run_of_quakeledger_and_validation_peru_stochastic(self):
+        '''
+        The testcase with some default values for
+        peru with the stochastic ones.
+        '''
+        eventlist = self._run_quakeledger_and_validate(
+            lonmin=276,
+            lonmax=292,
+            latmin=-20,
+            latmax=0,
+            magmin=6.6,
+            magmax=9.5,
+            depthmin=2,
+            depthmax=240,
+            # lower propability to filter here
+            propability=0.05,
+            etype='stochastic',
+            tlon=-71.5730623712764,
+            tlat=-33.1299174879672,
+        )
+
+        events = self._get_events(eventlist)
+        self.assertLess(0, len(events))
+
     def _get_events(self, eventlist):
         return eventlist.findall('{http://quakeml.org/xmlns/bed/1.2}event')
 
