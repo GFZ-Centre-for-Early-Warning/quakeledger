@@ -2,3 +2,4 @@ __pycache__
 .idea
 test.xml
 sqlite3.db
+*.swp
