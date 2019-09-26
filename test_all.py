@@ -292,11 +292,10 @@ class TestAll(unittest.TestCase, RunQuakeledgerMixin):
         series1 = pd.Series({'type': 'stochastic'})
         result1 = mapper(series1)
         self.assertEqual('stochastic', result1)
-        
+
         series2 = pd.Series({'type': 'historic'})
         result2 = mapper(series2)
         self.assertEqual('observed', result2)
-
 
     def _get_events(self, eventlist):
         return eventlist.findall('{http://quakeml.org/xmlns/bed/1.2}event')
