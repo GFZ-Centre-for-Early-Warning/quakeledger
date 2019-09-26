@@ -84,7 +84,7 @@ class MapToAttributeAndMapValues():
         self._attribute = attribute
         self._lookup_table = lookup_table
 
-    def __call_(self, old_series):
+    def __call__(self, old_series):
         old_value = old_series[self._attribute]
         if old_value in self._lookup_table.keys():
             return self._lookup_table[old_value]
