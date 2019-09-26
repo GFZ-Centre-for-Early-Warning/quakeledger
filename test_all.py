@@ -12,6 +12,7 @@ import unittest
 
 import lxml.etree as le
 
+
 class RunQuakeledgerMixin():
     '''
     Mixin for all the commands that are necessary
@@ -23,7 +24,11 @@ class RunQuakeledgerMixin():
         '''
         Test if a file is valid quakeml.
         '''
-        schema = le.XMLSchema(le.parse(self._get_file_in_project_folder('QuakeML-BED-1.2.xsd')))
+        schema = le.XMLSchema(
+            le.parse(
+                self._get_file_in_project_folder('QuakeML-BED-1.2.xsd')
+            )
+        )
         parser = le.XMLParser(schema=schema)
         # if there is a problem it will throw an exception
         # and the test will fail
@@ -72,10 +77,10 @@ class RunQuakeledgerMixin():
         '''
         subprocess.run(
             [
-                'python3', 
-                'eventquery.py', 
-                str(lonmin), 
-                str(lonmax), 
+                'python3',
+                'eventquery.py',
+                str(lonmin),
+                str(lonmax),
                 str(latmin),
                 str(latmax),
                 str(magmin),
@@ -83,10 +88,10 @@ class RunQuakeledgerMixin():
                 str(depthmin),
                 str(depthmax),
                 str(propability),
-                str(etype), 
+                str(etype),
                 str(tlon),
                 str(tlat)
-            ], 
+            ],
             # if the program fails
             # this will complain and the test will fail
             # as well
@@ -130,11 +135,11 @@ class RunQuakeledgerMixin():
         )
         return self._validate_output_is_quakeml()
 
+
 class TestAll(unittest.TestCase, RunQuakeledgerMixin):
     '''
     Test class to run.
     '''
-
 
     def test_run_of_quakeledger_and_validation_chile_deaggregation(self):
         '''
@@ -184,6 +189,6 @@ class TestAll(unittest.TestCase, RunQuakeledgerMixin):
     def _get_events(self, eventlist):
         return eventlist.findall('{http://quakeml.org/xmlns/bed/1.2}event')
 
+
 if __name__ == '__main__':
     unittest.main()
-
