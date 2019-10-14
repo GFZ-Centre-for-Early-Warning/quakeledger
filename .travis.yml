@@ -1,0 +1,40 @@
+dist: bionic
+language: python
+
+python:
+  - "3.7"
+
+install:
+  - pip3 install -r requirements.txt
+
+stages:
+  - compile
+  - pep8check
+  - pylintcheck
+  - test
+  - dockerbuild
+
+jobs:
+  include:
+    - stage: compile
+      script:
+        - python3 -m compileall .
+    - stage: pep8check
+      before_install:
+        - pip3 install pycodestyle
+      script:
+        - pycodestyle *.py || true
+    - stage: pylintcheck
+      before_install:
+        - pip3 install pylint
+      script:
+        - pylint --exit-zero *.py
+    - stage: test
+      before_install:
+        - unzip sqlite3.db.zip
+      script:
+        - python3 test_all.py
+    - stage: dockerbuild
+      install: skip
+      script:
+        - docker build -f metadata/Dockerfile .
