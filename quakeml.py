@@ -49,6 +49,8 @@ def add_uncertain_child(parent, childname, value, uncertainty):
     child = le.SubElement(parent, childname)
     v = le.SubElement(child, 'value')
     v.text = str(value)
+    if v.text == 'nan':
+        v.text = 'NaN'
     u = le.SubElement(child, 'uncertainty')
     u.text = str(uncertainty)
     return parent

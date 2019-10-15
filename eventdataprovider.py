@@ -75,7 +75,7 @@ class EventProvider():
             self.query = self.query.filter_by(type_=etype)
         elif etype in ['stochastic']:
             self.query = self.query.filter_by(type_=etype)
-            self.query = self.query.filter_by(probability > arg_probability)
+            self.query = self.query.filter(Event.probability > arg_probability)
         elif etype in ['deaggregation']:
             self.query = self.query.filter_by(type_='stochastic')
 

@@ -24,3 +24,25 @@ Following python modules need to be installed:
 - sqlalchemy
 - lxml
 - numpy
+
+# Setup
+You can use a virtual environment and the requirements.txt:
+
+```shell
+python3 -m venv env
+source env/bin/activate
+pip install -r requirements.txt
+```
+
+You also must make sure that you extract the sqlite database (which is zipped
+here because of file size policies on Github).
+
+```
+unzip sqlite3.db.zip
+```
+
+
+You can make sure that the script works by running
+```
+python3 test_all.py
+```
