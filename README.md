@@ -1,6 +1,7 @@
-Quakeledger
-----------------
+#Quakeledger
 
+[![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/gfzriesgos/quakeledger)](https://hub.docker.com/r/gfzriesgos/quakeledger)
+[![Build Status](https://travis-ci.com/gfzriesgos/quakeledger.svg?branch=master)](https://travis-ci.com/gfzriesgos/quakeledger)
 
 This is a rewrite from
 https://github.com/GFZ-Centre-for-Early-Warning/quakeledger
@@ -16,7 +17,7 @@ The data imported are the valparaiso\_v1.3.csv file as events table,
 the sites.csv as sites table and the
 mean\_disagg.csv as mean\_disagg table.
 
-# Requirements
+## Requirements
 
 Following python modules need to be installed:
 - pandas
