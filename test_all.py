@@ -9,11 +9,7 @@ runs with xml validation).
 import os
 import subprocess
 import unittest
-
-import pandas as pd
 import lxml.etree as le
-
-from migrations import add_csv_data_to_events
 
 
 class RunQuakeledgerMixin():
@@ -212,90 +208,6 @@ class TestAll(unittest.TestCase, RunQuakeledgerMixin):
 
         events = self._get_events(eventlist)
         self.assertLess(0, len(events))
-
-    def test_map_to_attribute(self):
-        '''
-        Testcase for the MapToAttribute class.
-        '''
-
-        mapper = add_csv_data_to_events.MapToAttribute('first')
-        series = pd.Series({'first': 10})
-
-        result = mapper(series)
-
-        self.assertEqual(10, result)
-
-    def test_map_to_one_value(self):
-        '''
-        Testcase for the MapToOneValue class.
-        '''
-
-        mapper = add_csv_data_to_events.MapToOneValue(100)
-        series = pd.Series({'first': 10})
-
-        result = mapper(series)
-
-        self.assertEqual(100, result)
-
-    def test_map_one_value_of_attribute_is_none(self):
-        '''
-        Testcase for the MapToOneValueIfAttributeIsNone class.
-        '''
-        mapper = add_csv_data_to_events.MapToOneValueIfAttributeIsNone(
-            attribute='first',
-            value=100
-        )
-
-        series1 = pd.Series({'first': 10})
-        result1 = mapper(series1)
-        self.assertEqual(10, result1)
-
-        series2 = pd.Series({'first': None})
-        result2 = mapper(series2)
-        self.assertEqual(100, result2)
-
-    def test_map_to_none(self):
-        '''
-        Testcase for the MapToNone class.
-        '''
-        mapper = add_csv_data_to_events.MapToNone()
-
-        self.assertIsNone(mapper(None))
-        self.assertIsNone(mapper(1))
-        self.assertIsNone(mapper(pd.Series({'first': 100})))
-
-    def test_map_to_attribute_with_prefix(self):
-        '''
-        Testcase for the MapToAttributeWithPrefix class.
-        '''
-        mapper = add_csv_data_to_events.MapToAttributeWithPrefix(
-            prefix='peru-',
-            attribute='id'
-        )
-        series = pd.Series({'id': 20})
-
-        result = mapper(series)
-
-        self.assertEqual('peru-20', result)
-
-    def test_map_to_attribute_and_map_values(self):
-        '''
-        Testcase for the MapToAttributeAndMapValues class.
-        '''
-        mapper = add_csv_data_to_events.MapToAttributeAndMapValues(
-            attribute='type',
-            lookup_table={
-                'historic': 'observed'
-            }
-        )
-
-        series1 = pd.Series({'type': 'stochastic'})
-        result1 = mapper(series1)
-        self.assertEqual('stochastic', result1)
-
-        series2 = pd.Series({'type': 'historic'})
-        result2 = mapper(series2)
-        self.assertEqual('observed', result2)
 
     def _get_events(self, eventlist):
         return eventlist.findall('{http://quakeml.org/xmlns/bed/1.2}event')
