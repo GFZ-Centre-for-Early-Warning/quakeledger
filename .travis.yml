@@ -30,8 +30,6 @@ jobs:
       script:
         - pylint --exit-zero *.py
     - stage: test
-      before_install:
-        - unzip sqlite3.db.zip
       script:
         - python3 test_all.py
     - stage: dockerbuild
