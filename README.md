@@ -3,6 +3,11 @@
 [![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/gfzriesgos/quakeledger)](https://hub.docker.com/r/gfzriesgos/quakeledger)
 [![Build Status](https://travis-ci.com/gfzriesgos/quakeledger.svg?branch=master)](https://travis-ci.com/gfzriesgos/quakeledger)
 
+## Citation
+
+Pittore, Massimiliano; Haas, Michael; Gomez-Zapata, Juan Camilo; Brinckmann, Nils; Rüster, Matthias; Proß, Benjamin (2021): Quakeledger: a web service to serve earthquake scenarios. V. 1.0. GFZ Data Services. https://doi.org/10.5880/riesgos.2021.003
+
+## Related repositories
 This is a rewrite from
 https://github.com/GFZ-Centre-for-Early-Warning/quakeledger
 
