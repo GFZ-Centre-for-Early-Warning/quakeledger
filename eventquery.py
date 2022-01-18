@@ -1,11 +1,11 @@
 #!/usr/bin/env/python
 
-'''
+"""
 Quakeledger
 -----------------
 
 Command line program to query data from a catalog.
-'''
+"""
 
 import argparse
 import os
@@ -15,15 +15,16 @@ from eventdeaggregation import DeaggregationAnalyzer, DeaggregationMatcher
 from eventwriter import QuakeMLWriter
 
 
-class Main():
-    '''
+class Main:
+    """
     Main class to execute
-    '''
+    """
+
     def __init__(self, args):
         folder = os.path.dirname(__file__)
 
         # db to use to query all the data
-        self.database = Database.from_local_sql_db(folder, 'sqlite3.db')
+        self.database = Database.from_local_sql_db(folder, "sqlite3.db")
 
         # command line arguments
         self.lonmin = args.lonmin
@@ -53,10 +54,10 @@ class Main():
         # result
         self.selected = None
 
-        self.filename_output = 'test.xml'
+        self.filename_output = "test.xml"
 
     def _check_longitude(self):
-        '''If there is a longitude > 180 than it should be converted'''
+        """If there is a longitude > 180 than it should be converted"""
         if self.lonmin > 180:
             self.lonmin = Main._convert_360(self.lonmin)
         if self.lonmax > 180:
@@ -64,27 +65,34 @@ class Main():
 
     @staticmethod
     def _convert_360(lon):
-        '''
+        """
         convert a longitude specified with 180+
-        '''
-        return lon-360
+        """
+        return lon - 360
 
     def _needs_deaggreation(self):
-        return self.etype == 'deaggregation'
+        return self.etype == "deaggregation"
 
     def _prepare_deaggreation(self, data_provider):
-        '''
+        """
         Extracts all the necessary data for the deaggregation
         and stores it in the instance variables
-        '''
+        """
         site_provider = data_provider.create_provider_for_sites()
         site = site_provider.get_nearest(self.tlon, self.tlat)
         deagg_provider = data_provider.create_provider_for_mean_deagg()
-        self.optional_deaggregation_data = deagg_provider.get_all_for_site_and_poe(
-            site, self.probability)
-        deagg_analyzer = DeaggregationAnalyzer(self.optional_deaggregation_data)
+        self.optional_deaggregation_data = (
+            deagg_provider.get_all_for_site_and_poe(site, self.probability)
+        )
+        deagg_analyzer = DeaggregationAnalyzer(
+            self.optional_deaggregation_data
+        )
         p_lon, p_lat, p_mag = deagg_analyzer.get_precisions_lon_lat_mag()
-        self.precision_lon, self.precision_lat, self.precision_mag = p_lon, p_lat, p_mag
+        self.precision_lon, self.precision_lat, self.precision_mag = (
+            p_lon,
+            p_lat,
+            p_mag,
+        )
         # the reason behind storing this data is,
         # that the deaggregation may change the location of the data
         # so we need the precision of the deaggregated values to
@@ -95,7 +103,7 @@ class Main():
         # and they don't influence the database query
 
     def _deaggregate(self):
-        '''
+        """
         Does the deaggregation.
         Returns a pandas dataframe with the result.
         Because of the deaggregation a bigger extend of data
@@ -104,18 +112,24 @@ class Main():
         So we need another spatial filtering
         (and filtering for the magnitude as well)
         after deaggregation.
-        '''
+        """
         matcher = DeaggregationMatcher(
             self.optional_deaggregation_data,
             self.precision_lon,
             self.precision_lat,
-            self.precision_mag)
+            self.precision_mag,
+        )
         deaggregation_result = matcher.match_deaggregation(self.selected)
         # another filter
         # because the deaggregation has needed a bigger extend of data
         deaggregation_result.add_filter_spatial(
-            self.lonmin, self.lonmax, self.latmin,
-            self.latmax, self.zmin, self.zmax)
+            self.lonmin,
+            self.lonmax,
+            self.latmin,
+            self.latmax,
+            self.zmin,
+            self.zmax,
+        )
         deaggregation_result.add_filter_magnitude(self.mmin, self.mmax)
         deaggregation_result.add_ordering_magnitude_desc()
 
@@ -127,22 +141,22 @@ class Main():
         writer.write(self.selected)
 
     def _filter_num_events(self):
-        '''
+        """
         If the setting for the number of events is set,
         then only query the first n
-        '''
+        """
 
         if self.num_events > 0:
-            self.selected = self.selected.iloc[0:self.num_events]
+            self.selected = self.selected.iloc[0 : self.num_events]
 
     def run(self):
-        '''
+        """
         Method to:
         - connect with the database
         - query the database
         - do some deaggregation if necessary
         - write the output
-        '''
+        """
 
         self._check_longitude()
 
@@ -169,11 +183,12 @@ class Main():
                 self.latmin - self.precision_lat,
                 self.latmax + self.precision_lat,
                 self.zmin,
-                self.zmax)
+                self.zmax,
+            )
             # same for the magnitude
             event_provider.add_filter_magnitude(
-                self.mmin - self.precision_mag,
-                self.mmax + self.precision_mag)
+                self.mmin - self.precision_mag, self.mmax + self.precision_mag
+            )
 
             # there should be the ordering
             # with the highest magnitde first
@@ -193,75 +208,85 @@ class Main():
 
     @classmethod
     def create_with_arg_parser(cls):
-        '''
+        """
         Creates an arg parser and uses that to create the Main class
-        '''
+        """
         arg_parser = argparse.ArgumentParser(
-            description='''Program to query a earth quake catalog'''
+            description="""Program to query a earth quake catalog"""
         )
         arg_parser.add_argument(
-            'lonmin',
-            help='Minimal longitude to search for earth quakes',
+            "lonmin",
+            help="Minimal longitude to search for earth quakes",
             type=float,
-            default=288.0)
+            default=288.0,
+        )
         arg_parser.add_argument(
-            'lonmax',
-            help='Maximal longitude to search for earth quakes',
+            "lonmax",
+            help="Maximal longitude to search for earth quakes",
             type=float,
-            default=292.0)
+            default=292.0,
+        )
         arg_parser.add_argument(
-            'latmin',
-            help='Minimal latitude to search for earth quakes',
+            "latmin",
+            help="Minimal latitude to search for earth quakes",
             type=float,
-            default=-70.0)
+            default=-70.0,
+        )
         arg_parser.add_argument(
-            'latmax',
-            help='Maximal latitude to search for earth quakes',
+            "latmax",
+            help="Maximal latitude to search for earth quakes",
             type=float,
-            default=-10.0)
+            default=-10.0,
+        )
         arg_parser.add_argument(
-            'mmin',
-            help='Lowest magnitude to search for earth qaukes',
+            "mmin",
+            help="Lowest magnitude to search for earth qaukes",
             type=float,
-            default=6.6)
+            default=6.6,
+        )
         arg_parser.add_argument(
-            'mmax',
-            help='Hightes magnitude to search for earth quakes',
+            "mmax",
+            help="Hightes magnitude to search for earth quakes",
             type=float,
-            default=8.5)
+            default=8.5,
+        )
         arg_parser.add_argument(
-            'zmin',
-            help='Mininal depth to search for earth quakes',
+            "zmin",
+            help="Mininal depth to search for earth quakes",
             type=float,
-            default=5.0)
+            default=5.0,
+        )
         arg_parser.add_argument(
-            'zmax',
-            help='Maximal depth to search for earth quakes',
+            "zmax",
+            help="Maximal depth to search for earth quakes",
             type=float,
-            default=140.0)
+            default=140.0,
+        )
         arg_parser.add_argument(
-            'p',
-            help='Probability for deaggregation',
-            type=float,
-            default=0.1)
+            "p", help="Probability for deaggregation", type=float, default=0.1
+        )
         arg_parser.add_argument(
-            'etype',
-            help='Type of the earth quake in the catalog (expert, stochastic, deaggregation)',
+            "etype",
+            help="Type of the earth quake in the catalog (expert, stochastic, deaggregation)",
             type=str,
-            default="deaggregation")
+            default="deaggregation",
+        )
         arg_parser.add_argument(
-            'tlon',
-            help='Longitude to search for the nearest side on deaggregation',
+            "tlon",
+            help="Longitude to search for the nearest side on deaggregation",
             type=float,
-            default=-71.5730623712764)
+            default=-71.5730623712764,
+        )
         arg_parser.add_argument(
-            'tlat',
-            help='Latitude to search for the nearest side on deaggregation',
+            "tlat",
+            help="Latitude to search for the nearest side on deaggregation",
             type=float,
-            default=-33.1299174879672)
+            default=-33.1299174879672,
+        )
         args = arg_parser.parse_args()
 
         return cls(args)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     Main.create_with_arg_parser().run()
