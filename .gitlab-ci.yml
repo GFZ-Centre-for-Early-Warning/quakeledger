@@ -15,6 +15,7 @@
 stages:
   - test
   - build
+  - deploy
 
 variables:
   LC_ALL: "C.UTF-8"
@@ -136,3 +137,12 @@ dockerbuild_tagged:
     - docker tag quakeledger:${CI_COMMIT_TAG} git.gfz-potsdam.de:5000/id2/riesgos/quakeledger:${CI_COMMIT_TAG}
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push git.gfz-potsdam.de:5000/id2/riesgos/quakeledger:${CI_COMMIT_TAG}
+
+deploy_latest:
+  stage: deploy
+  variables:
+    DEPLOY_LATEST_IMAGES: "true"
+  trigger:
+    project: id2/riesgos/gfz-riesgos-wps-repository
+    branch: master
+    strategy: depend
