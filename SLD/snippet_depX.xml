@@ -1,0 +1,30 @@
+        <Rule>
+          <Name>__NAME__</Name>
+          <Filter xmlns="http://www.opengis.net/ogc">
+            <And>
+              <PropertyIsGreaterThanOrEqualTo>
+                <PropertyName>magnitude.mag.value</PropertyName>
+                <Literal>__MAG_FROM__</Literal>
+              </PropertyIsGreaterThanOrEqualTo>
+              <PropertyIsLessThan>
+                <PropertyName>magnitude.mag.value</PropertyName>
+                <Literal>__MAG_TO__</Literal>
+              </PropertyIsLessThan>
+              <PropertyIsGreaterThanOrEqualTo>
+                <PropertyName>origin.depth.value</PropertyName>
+                <Literal>__DEPTH_FROM__</Literal>
+              </PropertyIsGreaterThanOrEqualTo>
+            </And>
+          </Filter>
+          <PointSymbolizer>
+            <Graphic>
+              <Mark>
+                <WellKnownName>circle</WellKnownName>
+                <Fill>
+                  <CssParameter name="fill">__COLOR__</CssParameter>
+                </Fill>
+              </Mark>
+              <Size>__RADIUS__</Size>
+            </Graphic>
+          </PointSymbolizer>
+        </Rule>
